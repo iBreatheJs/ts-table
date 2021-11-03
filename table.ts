@@ -89,12 +89,10 @@ export interface TableOptions<Data extends TableData> {
 
 export interface RowFunc<Data extends TableData> {
     (
-        // table: Table<RowData[]>, //TODO: figure out data type here
-        table: Table<Data>, //TODO: figure out data type here
-        // table: object, //TODO: figure out data type here
-        tableData: Data,
+        rowHtml: HTMLTableRowElement,
         keyOrIndex: string | number,
-        rowHtml: HTMLTableRowElement
+        tableData: Data,
+        table: Table<Data>, //TODO: figure out data type here
     ): void
 }
 
@@ -105,9 +103,9 @@ export interface RowFunc<Data extends TableData> {
  */
 export interface CollapsibleRowFunc<Data> {
     (
-        tableData: Data,
+        cellHtml: HTMLTableCellElement,
         keyOrIndex: string | number,
-        cellHtml: HTMLTableCellElement
+        tableData: Data,
     ): void
 }
 
@@ -350,7 +348,7 @@ export class Table<Data extends TableData>{
             if (this.options.rowFunc) {
                 // this.options.rowFunc(this, this.tableData, keyOrIndex, row)
 
-                this.options.rowFunc(this, this.tableData, keyOrIndex, row)
+                this.options.rowFunc(row, keyOrIndex, this.tableData, this)
 
             }
             // collapsible Row:
@@ -362,7 +360,7 @@ export class Table<Data extends TableData>{
                 cell.style.display = "none";
 
                 // call callback function to fill the hidden cell
-                this.options.collapsible(this.tableData, keyOrIndex, cell)
+                this.options.collapsible(cell, keyOrIndex, this.tableData)
 
                 if (row) {
                     row.onclick = () => {
