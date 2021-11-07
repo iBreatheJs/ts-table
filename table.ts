@@ -51,10 +51,32 @@ interface Dictionary<TValue> {
     [id: string]: TValue;
 }
 
+interface DictRO<T> {
+    readonly [id: string]: T;
+}
+// interface DictRO<TValue> {
+//     readonly [id: string]: TValue;
+// }
+
+// export interface DictROEx {
+//     readonly time: number,
+//     readonly vol: number,
+//     readonly price: number,
+//     readonly cost: number,
+//     readonly id: number // uniqe among trades of same asset pair
+// }
+
+
+// export type DictRO2<Data> = Data extends DictRO;
+
 // type TableData<T> = Dictionary<T> | T[];
 // type TableData = Dictionary<Dictionary<number | string>> | Dictionary<number | string>[]
 // TODO: implement checkbox etc. for bool
-export type RowData = Dictionary<number | string | boolean>
+// export type RowData = Dictionary< number | string | boolean>
+// export type RowData = Dictionary<Readonly<string>>[]
+// export type RowData = Dictionary< Readonly<number> | Readonly<string>>
+// export type RowDataRO = DictRO<number | string | boolean>
+type RowDataRO = DictRO<number | string | boolean>
 //  | TableDataExt<Data>;
 // type TableData = Dictionary<Dictionary<number | string>> | Dictionary<number | string>[] | TableDataExt<Data>;
 // type TableDataTest<Data extends DataDict> = Dictionary<Data> | Data[];
@@ -62,59 +84,28 @@ export type RowData = Dictionary<number | string | boolean>
 export type TableData2<T> = T extends Array<any> ? RowData[] : Dictionary<RowData>;
 
 // export type TableData = Dictionary<RowData> | RowData[];
-export type TableData = TableDataDict | TableDataArr;
-
-type TableDataDict = {
-    data: Dictionary<RowData>
-    index: string
-}
-type TableDataArr = {
-    data: RowData[]
-    index: number
-}
+// export type TableData = RowData[] | Dictionary<RowData>;
+// export type TableData = RowDataRO[] | Dictionary<RowDataRO>;
+export type TableData = RowDataRO[];
+// export type TableData = DictRO[] | Dictionary<DictRO>;
+// export type TableData<T> = T extends Array<RowData> ? RowData[] : Dictionary<RowData>;
 
 
+// export type TableData = TableDataDict | TableDataArr;
+
+// type TableDataDict = {
+//     data: Dictionary<RowData>
+//     index: string
+// }
+// type TableDataArr = {
+//     data: RowData[]
+//     index: number
+// }
 
 
 
 export type KeyOrIndex<data> = data extends Array<any> ? number : string;
 
-var test1 = {
-    asdf: {
-        par1: 1,
-        par2: 2
-    }
-}
-
-
-var asdf: TableData2<typeof test1>
-var asdf2: TableData2<typeof test2>
-
-var test2 =
-    [
-        {
-            par1: 1,
-            par2: 2
-        }
-    ]
-
-
-export type ArrOrDict<T> = T extends Array<any> ? any[] : never;
-
-
-
-// function test(arrOrDictParam:any[] | Dictionary<any>) {
-// type asdf = ArrOrDict<typeof arrOrDictParam>       
-// var asdfff: asdf = arrOrDictParam[9] 
-// }
-
-export interface TradeMin {
-    time: number,
-    vol: number,
-    price: number,
-    cost: number,
-    id: number // uniqe among trades of same asset pair
-}
 
 
 // export type Trade = Dictionary<string | number> & { potentialBuys?: Trades, specPeriod?: Trades } & TradeMin
@@ -126,23 +117,29 @@ export interface TradeMin {
 export interface TableOptions<Data extends TableData> {
     tableStyle?: Dictionary<Dictionary<string>>,
     alternateColour?: boolean //default true
+    transformData?: RowFunc<Data>,
     rowFunc?: RowFunc<Data>,
     collapsible?: CollapsibleRowFunc<Data>,
     sortable?: { // TODO: add 3rd value to header that is used for sorting, eg. for time: display simple date format but calc with unix time stamp
         all: boolean,
         cols?: [string]
     },
-    editable?: OnEditFunc
+    editable?: OnEditFunc | boolean
 }
+
+type ROData<Data> = Data extends Array<infer RowData> ? Readonly<RowData> : never;
+
+type ReadOnly<T> = { readonly [P in keyof T]: T[P] };
 
 export interface RowFunc<Data extends TableData> {
     (
         rowHtml: HTMLTableRowElement,
-        keyOrIndex: TableData['index'],
+        keyOrIndex: KeyOrIndex<Data>,
         // keyOrIndex: number | string,
         // keyOrIndex: KeyOrIndex<Data>,
         // keyOrIndex: Data extends Dictionary<any> ? string : number,
-        tableData: Data['data'],
+        tableData: ROData<Data>,
+        // tableData: RowDataRO[],
         table: Table<Data>, //TODO: figure out data type here
     ): void
 }
@@ -156,15 +153,16 @@ export interface CollapsibleRowFunc<Data extends TableData> {
     (
         cellHtml: HTMLTableCellElement,
         // keyOrIndex: string | number,
-        keyOrIndex: Data['index'],
-        tableData: Data['data'],
+        keyOrIndex: KeyOrIndex<Data>,
+        tableData: Data,
     ): void
 }
 
 export interface OnEditFunc {
     (
-        event: Event,
-        tableData: TableData['data'], //todo
+        row: HTMLTableRowElement,
+        cell: HTMLTableCellElement,
+        tableData: TableData, //todo
     ): void
 }
 
@@ -173,10 +171,12 @@ export interface OnEditFunc {
 // ASK: can i configure private interfaces for the class
 // that reference tableData without the need to always n everywherer pass the generic type
 // var asdf : typeof Table= Table()
-export class Table<Data extends TableData>{
+// export class Table<Data extends TableData>{
+export class Table<Data extends RowData[]>{
     private tableHtml: HTMLTableElement;
     private header: Dictionary<string>;
-    private _tableData: Data["data"];
+    readonly tableData: Data;
+    // private _tableData: Data;
     public options: TableOptions<Data>;
     // public options: {
     //     tableStyle?: Dictionary<Dictionary<string>>,
@@ -191,15 +191,15 @@ export class Table<Data extends TableData>{
     // }
     private tableStyle: Dictionary<Dictionary<string>>
 
-    public get tableData() {
-        return this._tableData
-    }
+    //  get tableData() {
+    //     return this._tableData
+    // }
 
-    public set tableData(tableData) {
-        console.log("setter table data")
-        this._tableData = tableData;
-        this.updateTableValues()
-    }
+    // public set tableData(tableData) {
+    //     console.log("setter table data")
+    //     this._tableData = tableData;
+    //     // this.updateTableValues()
+    // }
 
 
 
@@ -210,10 +210,11 @@ export class Table<Data extends TableData>{
      * @param tableData 
      * @param options 
      */
-    constructor(tableHtml: HTMLTableElement, header: Dictionary<string>, tableData: Data["data"], options: TableOptions<Data> = {}) {
+    constructor(tableHtml: HTMLTableElement, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
         this.tableHtml = tableHtml
         this.header = header
-        this._tableData = tableData
+        // this._tableData = tableData
+        this.tableData = tableData
         this.options = options
         // TODOOO
         // if (this.options?.alternateColour != false) this.options?.alternateColour = true;
@@ -233,13 +234,34 @@ export class Table<Data extends TableData>{
             return this.tableData[row - 1][Object.keys(this.header)[col]]
         }
     }
-    setDataByIndex(row: number, col: number, data: number | string) {
+    setDataByIndex(row: number, colKeyOrIndex: number | string, data: number | string) {
         // TODO implement for dict
         if (Array.isArray(this.tableData)) {
-            this.tableData[row - 1][Object.keys(this.header)[col]] = data
+
+            // let colIndex = (typeof col === "string") ? col : Object.keys(this.header)[col]
+
+            let colIndexNr: number
+            let colIndexStr: string
+
+            let headerKeys = Object.keys(this.header)
+            if (typeof colKeyOrIndex === "string") {
+                colIndexNr = headerKeys.indexOf(colKeyOrIndex) //false
+                colIndexStr = colKeyOrIndex
+            } else {
+                colIndexNr = colKeyOrIndex
+                colIndexStr = headerKeys[colKeyOrIndex]
+
+            }
+
+            // let colIndex = col
+            this.tableData[row - 1][colIndexStr] = data
+            this.updateTableValues(row, colIndexNr, colIndexStr)
 
             // TODO: idk yet how to solve. atm dont update after set but do it manually bc of tax calculation that happens afterwards
             // this.updateTableValues()
+
+
+
         }
     }
 
@@ -250,22 +272,50 @@ export class Table<Data extends TableData>{
         }
     }
 
-    updateTableValues() {
+    /**
+     * only called from setDataByIndex
+     *      data can be set onEdit or manually by user at any time
+     * setDataByIndex - sets the data then calls -> updateTableValues - updates the html table cell
+     * 
+     * @param row 
+     * @param colNr 
+     * @param colStr 
+     * @returns 
+     */
+    private updateTableValues(row?: number, colNr?: number, colStr?: string) {
         // check data structure
 
-
-        console.log("update table values")
         // console.log(this.tableData)
 
         if (Array.isArray(this.tableData)) {
             let rows = this.tableHtml.rows
-            let headerKeys = Object.keys(this.header)
+            // let headerKeys = Object.keys(this.header)
 
+            // if row, col param updat only what is necessary
+            if (row && colNr && colStr) {
+                console.log("update table value")
+
+                console.log(rows[row].cells)
+                let cell = rows[row].cells[colNr]
+                console.log("cell to update")
+                console.log(cell)
+
+                // let key = headerKeys[col]
+
+                cell.innerHTML = String(this.tableData[row - 1][colStr])
+                return
+            }
+            console.log("update ALLL table values")
+
+            // update all cells
             // data starting with index 0, table starting with index 1 because 0 is the header
             let rowIndex = 1
             // starting with index 1; 0 is the header
             for (rowIndex; rowIndex < rows.length; rowIndex++) {
                 const row = rows[rowIndex];
+
+                this.transformData(row, rowIndex - 1)
+
                 // for (let rowIndex in rows) {
                 // let row = rows[rowIndex]
                 let cells = row.cells
@@ -276,6 +326,8 @@ export class Table<Data extends TableData>{
                 for (let colIndex = 0; colIndex < cells.length; colIndex++) {
                     const cell = cells[colIndex];
 
+                    // todo need that?
+                    let headerKeys = Object.keys(this.header)
                     let key = headerKeys[colIndex]
 
                     // console.log(this.tableData[dataRowIndex][key])
@@ -287,6 +339,36 @@ export class Table<Data extends TableData>{
                 }
             }
         }
+    }
+
+    // update cell value
+    // TODO: maybe more params could be needed outside in the callback, eg. pass table
+    onEdit(event: Event, keyOrIndex: string | number) {
+        let cell = event.currentTarget as HTMLTableCellElement
+        let row = cell.parentElement as HTMLTableRowElement
+
+        let cellIndex = cell.cellIndex
+        let rowIndex = row.rowIndex
+
+        var valNew = cell.innerHTML
+
+        this.setDataByIndex(rowIndex, cellIndex, valNew)
+
+        // ASK: pass row, cell as index html or string??
+        if (this.options.editable && typeof this.options.editable === "function")
+            this.options.editable(row, cell, this.tableData);
+
+        // if (this.options.transformData) {
+        //     this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
+        // }
+
+    }
+
+    transformData(row: HTMLTableRowElement, keyOrIndex: string | number) {
+        if (this.options.transformData) {
+            this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
+        }
+
     }
 
     drawTable() {
@@ -320,91 +402,36 @@ export class Table<Data extends TableData>{
 
         // check data structure
         var dataIsArray = Array.isArray(this.tableData)
-        var asdf = this.tableData
 
-        var keyOrIndex: TableData['index']
-
-        type TableDataDict = {
-            data: Dictionary<RowData>
-            index: string
-        }
-        type TableDataArr = {
-            data: RowData[]
-            index: number
-        }
-
-        var test: {
-            data: RowData[]
-            index: number
-        } |
-        {
-            data: Dictionary<RowData>
-            index: string
-        } = {
-            data: this.tableData,
-            index: "1"
-        }
-
-
-
-        interface Dictionary<TValue> {
-            [id: string]: TValue;
-        }
-
-        
-        type ArrWithCorrectIndex = {
-            type: Array<any>
-            index: number
-        }
-        
-        type DictWithCorrectIndex = {
-            type: Dictionary<any>
-            index: string
-        }
-        type ArrOrDict = ArrWithCorrectIndex | DictWithCorrectIndex
-        
-        function arr(param: ArrWithCorrectIndex) {
-            param.type[param.index]
-        }
-        function dict(param: DictWithCorrectIndex) {
-            param.type[param.index]
-        }
-        function arrOrDict(param: ArrOrDict) {
-            // Element implicitly has an 'any' type because expression of type 'string | number' can't be used to index type 'any[] | Dictionary<any>'.
-            // No index signature with a parameter of type 'string' was found on type 'any[] | Dictionary<any>'.ts(7053)
-            param.type[param.index]
-        }
-
-        
-
-        type Index<T> = T extends Array<any> ? number : string
-        
-        function testt(param: Array<any> | Dictionary<any>) {
-            var index :Index<typeof param> = Array.isArray(param) ? 0 : "0"
-            param[param.index]
-        }
 
 
 
         var keyOrIndex: number | string
         // var keyOrIndex: KeyOrIndex<Data>
 
+        // if(Array.isArray(this.tableData)) keyOrIndex = 7
+
 
         // for in returns key (and also Array index) as string
         for (keyOrIndex in this.tableData) {
 
-            // convert string to number for tsc
+            // convert string to number for tsc - only necessary when checking for types when indexing data (arr/dict)
+            // tried a million years and approches but there is not satisfying way to make ts understand it, it seems
+            // TODO document in md
             // if (isArray(this.tableData)) keyOrIndex = +keyOrIndexTmp;
-            // keyOrIndex = (typeof keyOrIndex === "string") ? keyOrIndexTmp : Number(keyOrIndexTmp)
-            if (isArray(this.tableData)) this.tableData.index = Number(keyOrIndex);
-            // if (dataIsArray) (keyOrIndex as unknown as number) = +keyOrIndex
-            // if (dataIsArray) keyOrIndex = +keyOrIndex;
-            this.tableData["data"][this.tableData.index]
-            // TODO y tf did i convert to number? sorting does not need it it seems
 
             let row = this.tableHtml.insertRow();
 
+            // transform row data, called for each row TODO: that good here or call once and set all
+            if (this.options.transformData) {
+                this.transformData(row, keyOrIndex as KeyOrIndex<Data>)
+                // this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
+            }
+
             for (const col in this.header) {
+
+
+
                 let value
 
                 // @ts-ignore
@@ -414,42 +441,6 @@ export class Table<Data extends TableData>{
                 // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
                 value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
 
-                // var wtf = this.tableData
-
-                // var asdf: TableData2<typeof wtf> = this.tableData[0];
-                // console.log(asdf)
-
-                /* // --------------- TS struggles ---------------- TODO:
-                                
-                                // Array & not String   ok
-                                // Array & String       nok
-                                // Dict & String        ok
-                                // Dict & not String    ok
-                
-                                // It is clear that it is a number by the time u know its an Array, so its a bunch of useless checks in a loop.
-                                // Would be nice to have a feature to narrow / assign a type without being limited to the scope of an if-statement.
-                                if (isArray(this.tableData)) {
-                                    if (typeof keyOrIndex === "number")
-                                        value = this.tableData[keyOrIndex][col];
-                                } else {
-                                    // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
-                                    value = col == 'keyTableData' ?
-                                        keyOrIndex :
-                                        this.tableData[keyOrIndex][col];
-                
-                                    // same shit
-                                    // value = this.tableData[keyOrIndex][col];
-                                }
-                
-                                // THIS IS STUPID!! This would do it all without ts
-                                // value = this.tableData[keyOrIndex][col];
-                
-                                // Interesting:
-                                // https://stackoverflow.com/questions/46312206/narrowing-a-return-type-from-a-generic-discriminated-union-in-typescript
-                
-                                // --------------- TS struggles ----------------
-                 */
-
                 let cell = row.insertCell();
                 // set id to col name, identification for table update
                 // TODO: use id for each single celll or do it by class??
@@ -458,13 +449,11 @@ export class Table<Data extends TableData>{
 
                 // make editable
                 // TODO: move events outside in config
-                const edi = this.options.editable
                 if (this.options.editable) {
                     cell.setAttribute("contenteditable", "true")
                     // cell.addEventListener('click', (el: any) => this.onEdit(el))
                     cell.addEventListener('blur', (event: Event) => {
-                        if (this.options.editable)
-                            this.options.editable(event, this.tableData);
+                        this.onEdit(event, keyOrIndex)
                     })
                     // cell.addEventListener('keyup', (el: any) => this.onEdit(el))
                     // cell.addEventListener('paste', (el: any) => this.onEdit(el))
@@ -478,7 +467,7 @@ export class Table<Data extends TableData>{
             if (this.options.rowFunc) {
                 // this.options.rowFunc(this, this.tableData, keyOrIndex, row)
 
-                this.options.rowFunc(row, keyOrIndex, this.tableData, this)
+                this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
                 // this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
 
             }
@@ -491,7 +480,7 @@ export class Table<Data extends TableData>{
                 cell.style.display = "none";
 
                 // call callback function to fill the hidden cell
-                this.options.collapsible(cell, keyOrIndex, this.tableData)
+                this.options.collapsible(cell, keyOrIndex as KeyOrIndex<Data>, this.tableData)
 
                 if (row) {
                     row.onclick = () => {
