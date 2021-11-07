@@ -58,7 +58,55 @@ export type RowData = Dictionary<number | string | boolean>
 //  | TableDataExt<Data>;
 // type TableData = Dictionary<Dictionary<number | string>> | Dictionary<number | string>[] | TableDataExt<Data>;
 // type TableDataTest<Data extends DataDict> = Dictionary<Data> | Data[];
-export type TableData = Dictionary<RowData> | RowData[];
+
+export type TableData2<T> = T extends Array<any> ? RowData[] : Dictionary<RowData>;
+
+// export type TableData = Dictionary<RowData> | RowData[];
+export type TableData = TableDataDict | TableDataArr;
+
+type TableDataDict = {
+    data: Dictionary<RowData>
+    index: string
+}
+type TableDataArr = {
+    data: RowData[]
+    index: number
+}
+
+
+
+
+
+export type KeyOrIndex<data> = data extends Array<any> ? number : string;
+
+var test1 = {
+    asdf: {
+        par1: 1,
+        par2: 2
+    }
+}
+
+
+var asdf: TableData2<typeof test1>
+var asdf2: TableData2<typeof test2>
+
+var test2 =
+    [
+        {
+            par1: 1,
+            par2: 2
+        }
+    ]
+
+
+export type ArrOrDict<T> = T extends Array<any> ? any[] : never;
+
+
+
+// function test(arrOrDictParam:any[] | Dictionary<any>) {
+// type asdf = ArrOrDict<typeof arrOrDictParam>       
+// var asdfff: asdf = arrOrDictParam[9] 
+// }
 
 export interface TradeMin {
     time: number,
@@ -90,8 +138,11 @@ export interface TableOptions<Data extends TableData> {
 export interface RowFunc<Data extends TableData> {
     (
         rowHtml: HTMLTableRowElement,
-        keyOrIndex: string | number,
-        tableData: Data,
+        keyOrIndex: TableData['index'],
+        // keyOrIndex: number | string,
+        // keyOrIndex: KeyOrIndex<Data>,
+        // keyOrIndex: Data extends Dictionary<any> ? string : number,
+        tableData: Data['data'],
         table: Table<Data>, //TODO: figure out data type here
     ): void
 }
@@ -101,18 +152,19 @@ export interface RowFunc<Data extends TableData> {
  * function that can be passed to Table as option 'collapsible'
  * to manipulate innerHtml of row that expends onClick 
  */
-export interface CollapsibleRowFunc<Data> {
+export interface CollapsibleRowFunc<Data extends TableData> {
     (
         cellHtml: HTMLTableCellElement,
-        keyOrIndex: string | number,
-        tableData: Data,
+        // keyOrIndex: string | number,
+        keyOrIndex: Data['index'],
+        tableData: Data['data'],
     ): void
 }
 
 export interface OnEditFunc {
     (
         event: Event,
-        tableData: TableData,
+        tableData: TableData['data'], //todo
     ): void
 }
 
@@ -124,7 +176,7 @@ export interface OnEditFunc {
 export class Table<Data extends TableData>{
     private tableHtml: HTMLTableElement;
     private header: Dictionary<string>;
-    private _tableData: Data;
+    private _tableData: Data["data"];
     public options: TableOptions<Data>;
     // public options: {
     //     tableStyle?: Dictionary<Dictionary<string>>,
@@ -143,7 +195,7 @@ export class Table<Data extends TableData>{
         return this._tableData
     }
 
-    public set tableData(tableData: Data) {
+    public set tableData(tableData) {
         console.log("setter table data")
         this._tableData = tableData;
         this.updateTableValues()
@@ -158,7 +210,7 @@ export class Table<Data extends TableData>{
      * @param tableData 
      * @param options 
      */
-    constructor(tableHtml: HTMLTableElement, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
+    constructor(tableHtml: HTMLTableElement, header: Dictionary<string>, tableData: Data["data"], options: TableOptions<Data> = {}) {
         this.tableHtml = tableHtml
         this.header = header
         this._tableData = tableData
@@ -268,14 +320,87 @@ export class Table<Data extends TableData>{
 
         // check data structure
         var dataIsArray = Array.isArray(this.tableData)
+        var asdf = this.tableData
+
+        var keyOrIndex: TableData['index']
+
+        type TableDataDict = {
+            data: Dictionary<RowData>
+            index: string
+        }
+        type TableDataArr = {
+            data: RowData[]
+            index: number
+        }
+
+        var test: {
+            data: RowData[]
+            index: number
+        } |
+        {
+            data: Dictionary<RowData>
+            index: string
+        } = {
+            data: this.tableData,
+            index: "1"
+        }
+
+
+
+        interface Dictionary<TValue> {
+            [id: string]: TValue;
+        }
+
+        
+        type ArrWithCorrectIndex = {
+            type: Array<any>
+            index: number
+        }
+        
+        type DictWithCorrectIndex = {
+            type: Dictionary<any>
+            index: string
+        }
+        type ArrOrDict = ArrWithCorrectIndex | DictWithCorrectIndex
+        
+        function arr(param: ArrWithCorrectIndex) {
+            param.type[param.index]
+        }
+        function dict(param: DictWithCorrectIndex) {
+            param.type[param.index]
+        }
+        function arrOrDict(param: ArrOrDict) {
+            // Element implicitly has an 'any' type because expression of type 'string | number' can't be used to index type 'any[] | Dictionary<any>'.
+            // No index signature with a parameter of type 'string' was found on type 'any[] | Dictionary<any>'.ts(7053)
+            param.type[param.index]
+        }
+
+        
+
+        type Index<T> = T extends Array<any> ? number : string
+        
+        function testt(param: Array<any> | Dictionary<any>) {
+            var index :Index<typeof param> = Array.isArray(param) ? 0 : "0"
+            param[param.index]
+        }
+
+
 
         var keyOrIndex: number | string
+        // var keyOrIndex: KeyOrIndex<Data>
+
+
         // for in returns key (and also Array index) as string
         for (keyOrIndex in this.tableData) {
 
             // convert string to number for tsc
-            if (isArray(this.tableData)) keyOrIndex = +keyOrIndex;
-            if (dataIsArray) keyOrIndex = +keyOrIndex;
+            // if (isArray(this.tableData)) keyOrIndex = +keyOrIndexTmp;
+            // keyOrIndex = (typeof keyOrIndex === "string") ? keyOrIndexTmp : Number(keyOrIndexTmp)
+            if (isArray(this.tableData)) this.tableData.index = Number(keyOrIndex);
+            // if (dataIsArray) (keyOrIndex as unknown as number) = +keyOrIndex
+            // if (dataIsArray) keyOrIndex = +keyOrIndex;
+            this.tableData["data"][this.tableData.index]
+            // TODO y tf did i convert to number? sorting does not need it it seems
 
             let row = this.tableHtml.insertRow();
 
@@ -288,6 +413,11 @@ export class Table<Data extends TableData>{
                 // 
                 // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
                 value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
+
+                // var wtf = this.tableData
+
+                // var asdf: TableData2<typeof wtf> = this.tableData[0];
+                // console.log(asdf)
 
                 /* // --------------- TS struggles ---------------- TODO:
                                 
@@ -349,6 +479,7 @@ export class Table<Data extends TableData>{
                 // this.options.rowFunc(this, this.tableData, keyOrIndex, row)
 
                 this.options.rowFunc(row, keyOrIndex, this.tableData, this)
+                // this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
 
             }
             // collapsible Row:
