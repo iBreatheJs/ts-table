@@ -1,12 +1,11 @@
 
+// TODO: load css file thats shipped with lib, or make that nicer to set up
 // console.log("document.styleSheets")
 // console.log(document.styleSheets)
 // var style = document.createElement('style');
 // style.type = 'text/css';
 // style.innerHTML = '.hidden { display: none; }';
 // document.getElementsByTagName('head')[0].appendChild(style);
-
-import { getTaxesMin } from "../tax";
 
 // document.getElementById('someElementId').className = 'cssClass';
 
@@ -18,6 +17,7 @@ import { getTaxesMin } from "../tax";
  * 
  * INFO: not implemented!! 
  * its just easier to use a css file with different classes
+ * TODO: might be nice in some cases to setup without css, and easy to modify specific style params programmatically without setting classes
  */
 export var tableStyle = {
     custom: {
@@ -46,7 +46,7 @@ function isTableRow(test: any): test is HTMLTableRowElement {
     return test.rowIndex;
 }
 
-
+// Types:
 interface Dictionary<TValue> {
     [id: string]: TValue;
 }
@@ -54,65 +54,20 @@ interface Dictionary<TValue> {
 interface DictRO<T> {
     readonly [id: string]: T;
 }
-// interface DictRO<TValue> {
-//     readonly [id: string]: TValue;
-// }
-
-// export interface DictROEx {
-//     readonly time: number,
-//     readonly vol: number,
-//     readonly price: number,
-//     readonly cost: number,
-//     readonly id: number // uniqe among trades of same asset pair
-// }
 
 
-// export type DictRO2<Data> = Data extends DictRO;
-
-// type TableData<T> = Dictionary<T> | T[];
-// type TableData = Dictionary<Dictionary<number | string>> | Dictionary<number | string>[]
 // TODO: implement checkbox etc. for bool
-// export type RowData = Dictionary< number | string | boolean>
-// export type RowData = Dictionary<Readonly<string>>[]
-// export type RowData = Dictionary< Readonly<number> | Readonly<string>>
-// export type RowDataRO = DictRO<number | string | boolean>
-type RowDataRO = DictRO<number | string | boolean>
-//  | TableDataExt<Data>;
-// type TableData = Dictionary<Dictionary<number | string>> | Dictionary<number | string>[] | TableDataExt<Data>;
-// type TableDataTest<Data extends DataDict> = Dictionary<Data> | Data[];
+export type RowData = Dictionary<number | string | boolean>
 
-export type TableData2<T> = T extends Array<any> ? RowData[] : Dictionary<RowData>;
+export type TableData = RowData[] | Dictionary<RowData>;
 
-// export type TableData = Dictionary<RowData> | RowData[];
-// export type TableData = RowData[] | Dictionary<RowData>;
-// export type TableData = RowDataRO[] | Dictionary<RowDataRO>;
-export type TableData = RowDataRO[];
-// export type TableData = DictRO[] | Dictionary<DictRO>;
-// export type TableData<T> = T extends Array<RowData> ? RowData[] : Dictionary<RowData>;
-
-
-// export type TableData = TableDataDict | TableDataArr;
-
-// type TableDataDict = {
-//     data: Dictionary<RowData>
-//     index: string
-// }
-// type TableDataArr = {
-//     data: RowData[]
-//     index: number
-// }
-
-
-
-export type KeyOrIndex<data> = data extends Array<any> ? number : string;
-
-
-
-// export type Trade = Dictionary<string | number> & { potentialBuys?: Trades, specPeriod?: Trades } & TradeMin
+// used for callback functions to hint the correct index type
+export type KeyOrIndex<data> = data extends Array<RowData> ? number : string;
 
 
 /**
- * optional Params for style / table feature
+ * optional table Params
+ * TODO: document params
  */
 export interface TableOptions<Data extends TableData> {
     tableStyle?: Dictionary<Dictionary<string>>,
@@ -127,19 +82,22 @@ export interface TableOptions<Data extends TableData> {
     editable?: OnEditFunc | boolean
 }
 
-type ROData<Data> = Data extends Array<infer RowData> ? Readonly<RowData> : never;
+// TODO, ASK: should the Data be passed as an immutable type in the beginning and then only in the table set data methode be casted?? 
+// propably, now its still mutable thru the variable thats passed into the table
+// Pass data back to callbacks, but its readonly and has to be set thru an update functions that also updates the dom accordingly.
+type ROData<Data> = Data extends Array<infer RowData> ?
+    Readonly<RowData>[] :
+    Data extends Dictionary<infer RowData> ?
+    Dictionary<Readonly<RowData>> : never;
 
-type ReadOnly<T> = { readonly [P in keyof T]: T[P] };
-
+   
+// TODO: ?make RowFunc more generic and use for all callbacks, htmlElement, data, table ref
+// TODO make tableData private bzw. test what happens when accessed thru table param / ?table param improvement or unncessary
 export interface RowFunc<Data extends TableData> {
     (
         rowHtml: HTMLTableRowElement,
         keyOrIndex: KeyOrIndex<Data>,
-        // keyOrIndex: number | string,
-        // keyOrIndex: KeyOrIndex<Data>,
-        // keyOrIndex: Data extends Dictionary<any> ? string : number,
         tableData: ROData<Data>,
-        // tableData: RowDataRO[],
         table: Table<Data>, //TODO: figure out data type here
     ): void
 }
@@ -152,9 +110,8 @@ export interface RowFunc<Data extends TableData> {
 export interface CollapsibleRowFunc<Data extends TableData> {
     (
         cellHtml: HTMLTableCellElement,
-        // keyOrIndex: string | number,
         keyOrIndex: KeyOrIndex<Data>,
-        tableData: Data,
+        tableData: ROData<Data>,
     ): void
 }
 
@@ -172,23 +129,12 @@ export interface OnEditFunc {
 // that reference tableData without the need to always n everywherer pass the generic type
 // var asdf : typeof Table= Table()
 // export class Table<Data extends TableData>{
-export class Table<Data extends RowData[]>{
+export class Table<Data extends TableData>{
     private tableHtml: HTMLTableElement;
     private header: Dictionary<string>;
     readonly tableData: Data;
     // private _tableData: Data;
     public options: TableOptions<Data>;
-    // public options: {
-    //     tableStyle?: Dictionary<Dictionary<string>>,
-    //     alternateColour?: boolean //default true
-    //     rowFunc?: RowFunc<Data>,
-    //     collapsible?: CollapsibleRowFunc<Data>,
-    //     sortable?: { // TODO: add 3rd value to header that is used for sorting, eg. for time: display simple date format but calc with unix time stamp
-    //         all: boolean,
-    //         cols?: [string]
-    //     },
-    //     editable?: OnEditFunc
-    // }
     private tableStyle: Dictionary<Dictionary<string>>
 
     //  get tableData() {
@@ -216,12 +162,8 @@ export class Table<Data extends RowData[]>{
         // this._tableData = tableData
         this.tableData = tableData
         this.options = options
-        // TODOOO
-        // if (this.options?.alternateColour != false) this.options?.alternateColour = true;
         this.tableStyle = options?.tableStyle || tableStyle
         // this.drawTable()
-        // check if possinle to structer rowfunc etc that no update is necessary right after init
-        // this.updateTableValues()
     }
 
     // TODO: getter, settter for tableData to update values in dom
@@ -259,9 +201,6 @@ export class Table<Data extends RowData[]>{
 
             // TODO: idk yet how to solve. atm dont update after set but do it manually bc of tax calculation that happens afterwards
             // this.updateTableValues()
-
-
-
         }
     }
 
@@ -366,7 +305,7 @@ export class Table<Data extends RowData[]>{
 
     transformData(row: HTMLTableRowElement, keyOrIndex: string | number) {
         if (this.options.transformData) {
-            this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
+            this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
         }
 
     }
@@ -467,7 +406,7 @@ export class Table<Data extends RowData[]>{
             if (this.options.rowFunc) {
                 // this.options.rowFunc(this, this.tableData, keyOrIndex, row)
 
-                this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
+                this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
                 // this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
 
             }
@@ -480,7 +419,7 @@ export class Table<Data extends RowData[]>{
                 cell.style.display = "none";
 
                 // call callback function to fill the hidden cell
-                this.options.collapsible(cell, keyOrIndex as KeyOrIndex<Data>, this.tableData)
+                this.options.collapsible(cell, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>)
 
                 if (row) {
                     row.onclick = () => {
