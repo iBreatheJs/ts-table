@@ -90,7 +90,7 @@ type ROData<Data> = Data extends Array<infer RowData> ?
     Data extends Dictionary<infer RowData> ?
     Dictionary<Readonly<RowData>> : never;
 
-   
+
 // TODO: ?make RowFunc more generic and use for all callbacks, htmlElement, data, table ref
 // TODO make tableData private bzw. test what happens when accessed thru table param / ?table param improvement or unncessary
 export interface RowFunc<Data extends TableData> {
@@ -135,7 +135,8 @@ export class Table<Data extends TableData>{
     readonly tableData: Data;
     // private _tableData: Data;
     public options: TableOptions<Data>;
-    private tableStyle: Dictionary<Dictionary<string>>
+    private tableStyle: Dictionary<Dictionary<string>>;
+    public initialized: boolean;
 
     //  get tableData() {
     //     return this._tableData
@@ -163,6 +164,7 @@ export class Table<Data extends TableData>{
         this.tableData = tableData
         this.options = options
         this.tableStyle = options?.tableStyle || tableStyle
+        this.initialized = false
         // this.drawTable()
     }
 
@@ -176,7 +178,9 @@ export class Table<Data extends TableData>{
             return this.tableData[row - 1][Object.keys(this.header)[col]]
         }
     }
-    setDataByIndex(row: number, colKeyOrIndex: number | string, data: number | string) {
+    // TODO: args any just keys of data, return type also whatever is possible on specific data
+    // setDataByIndex(rowIndexData: number, colKeyOrIndex: number | string, data: number | string | ((...args: any) => number | string)) {
+    setDataByIndex(rowIndexData: number, colKeyOrIndex: number | string, data: number | string) {
         // TODO implement for dict
         if (Array.isArray(this.tableData)) {
 
@@ -187,29 +191,25 @@ export class Table<Data extends TableData>{
 
             let headerKeys = Object.keys(this.header)
             if (typeof colKeyOrIndex === "string") {
-                colIndexNr = headerKeys.indexOf(colKeyOrIndex) //false
+                // col as string (in header or maybe new value for calculation)
+                colIndexNr = headerKeys.indexOf(colKeyOrIndex) // index in header or -1 if not in header / dom
                 colIndexStr = colKeyOrIndex
             } else {
+                // col as number (in header)
                 colIndexNr = colKeyOrIndex
                 colIndexStr = headerKeys[colKeyOrIndex]
-
             }
 
-            // let colIndex = col
-            this.tableData[row - 1][colIndexStr] = data
-            this.updateTableValues(row, colIndexNr, colIndexStr)
+            this.tableData[rowIndexData][colIndexStr] = data
+            if (colIndexNr != -1) {
+                if (this.initialized) this.updateTableValues(rowIndexData, colIndexNr, colIndexStr)
+            }
 
             // TODO: idk yet how to solve. atm dont update after set but do it manually bc of tax calculation that happens afterwards
             // this.updateTableValues()
         }
     }
 
-    test(cell: number) {
-        // TODO implement for dict
-        if (Array.isArray(this.tableData)) {
-            return this.tableData[cell]
-        }
-    }
 
     /**
      * only called from setDataByIndex
@@ -221,49 +221,45 @@ export class Table<Data extends TableData>{
      * @param colStr 
      * @returns 
      */
-    private updateTableValues(row?: number, colNr?: number, colStr?: string) {
+    // TODO: private?
+    public updateTableValues(rowIndexData?: number, colIndex?: number, colStr?: string) {
+
+        // TODO: atm if table already rendered, render the row
+        if (this.initialized) {
+            colIndex = undefined;
+            colStr = undefined;
+        }
         // check data structure
-
-        // console.log(this.tableData)
-
-        if (Array.isArray(this.tableData)) {
+        if (Array.isArray(this.tableData)) { //TODO!!! check dependency fields
             let rows = this.tableHtml.rows
-            // let headerKeys = Object.keys(this.header)
 
             // if row, col param updat only what is necessary
-            if (row && colNr && colStr) {
+            if (rowIndexData != undefined && colIndex != undefined && colStr != undefined) {
                 console.log("update table value")
+                // index in table is shifted by 1 bc of header
+                let rowIndexTable = rowIndexData + 1;
 
-                console.log(rows[row].cells)
-                let cell = rows[row].cells[colNr]
-                console.log("cell to update")
-                console.log(cell)
-
-                // let key = headerKeys[col]
-
-                cell.innerHTML = String(this.tableData[row - 1][colStr])
+                let cell = rows[rowIndexTable].cells[colIndex]
+                cell.innerHTML = String(this.tableData[rowIndexData][colStr])
                 return
             }
-            console.log("update ALLL table values")
 
-            // update all cells
             // data starting with index 0, table starting with index 1 because 0 is the header
-            let rowIndex = 1
+            let rowIndex = rowIndexData != undefined ? rowIndexData + 1 : 1
+            let rowIndexEnd = rowIndexData != undefined ? rowIndexData + 2 : rows.length
+
+            // update all cells / one specific row
+            console.log(rowIndexData === undefined ? "update ALLL table values" : "update table Row " + rowIndex)
+
             // starting with index 1; 0 is the header
-            for (rowIndex; rowIndex < rows.length; rowIndex++) {
+            for (rowIndex; rowIndex < rowIndexEnd; rowIndex++) {
                 const row = rows[rowIndex];
 
-                this.transformData(row, rowIndex - 1)
-
-                // for (let rowIndex in rows) {
-                // let row = rows[rowIndex]
                 let cells = row.cells
-                // console.log("rowwww data")
-                // console.log(this.tableData)
-                // console.log(rowIndex)
-                // console.log(rows)
+
                 for (let colIndex = 0; colIndex < cells.length; colIndex++) {
                     const cell = cells[colIndex];
+                    // cell.classList.add("bluee")
 
                     // todo need that?
                     let headerKeys = Object.keys(this.header)
@@ -280,6 +276,20 @@ export class Table<Data extends TableData>{
         }
     }
 
+    // TODO: implement this feature to update dependent cells on edit etc, visualize affected fields
+    // colExp: (...args: any) => number = (args) => {
+    //     var d = tableData[keyOrIndex]
+
+    //     console.log(args)
+    //     let cost = d[args.vol] * d[args.price]
+
+    //     // when table is already rendered update the cells
+    //     if(tableTrades.initialized){
+    //       tableTrades.
+    //     }
+    //     return cost
+    //   }
+
     // update cell value
     // TODO: maybe more params could be needed outside in the callback, eg. pass table
     onEdit(event: Event, keyOrIndex: string | number) {
@@ -287,11 +297,15 @@ export class Table<Data extends TableData>{
         let row = cell.parentElement as HTMLTableRowElement
 
         let cellIndex = cell.cellIndex
-        let rowIndex = row.rowIndex
+
+        // when getting index from table, -1 because of header
+        let rowIndexData = row.rowIndex - 1
 
         var valNew = cell.innerHTML
 
-        this.setDataByIndex(rowIndex, cellIndex, valNew)
+        //TODO: atm onclick set the data for the clicked, then transform data, from there set all fields of the row
+        this.setDataByIndex(rowIndexData, cellIndex, valNew)
+        this.transformData(row, rowIndexData)
 
         // ASK: pass row, cell as index html or string??
         if (this.options.editable && typeof this.options.editable === "function")
@@ -312,6 +326,8 @@ export class Table<Data extends TableData>{
 
     drawTable() {
         console.debug('draw Table ' + this.tableHtml.id);
+        if (this.initialized) console.warn("TODO: Possible error? drawTable should not be usded to update the table! " +
+            "Instead use the update methode/s which aim to keep the data object, tablecells and its dependent fields in sync")
 
         // HEADER
         let thead = this.tableHtml.createTHead();
@@ -342,9 +358,6 @@ export class Table<Data extends TableData>{
         // check data structure
         var dataIsArray = Array.isArray(this.tableData)
 
-
-
-
         var keyOrIndex: number | string
         // var keyOrIndex: KeyOrIndex<Data>
 
@@ -357,7 +370,7 @@ export class Table<Data extends TableData>{
             // convert string to number for tsc - only necessary when checking for types when indexing data (arr/dict)
             // tried a million years and approches but there is not satisfying way to make ts understand it, it seems
             // TODO document in md
-            // if (isArray(this.tableData)) keyOrIndex = +keyOrIndexTmp;
+            if (isArray(this.tableData)) keyOrIndex = +keyOrIndex; //!!!!
 
             let row = this.tableHtml.insertRow();
 
@@ -369,8 +382,6 @@ export class Table<Data extends TableData>{
 
             for (const col in this.header) {
 
-
-
                 let value
 
                 // @ts-ignore
@@ -381,9 +392,8 @@ export class Table<Data extends TableData>{
                 value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
 
                 let cell = row.insertCell();
-                // set id to col name, identification for table update
-                // TODO: use id for each single celll or do it by class??
-                // cell.id = col
+
+                // set same class for each cell in a col, TODO: remove bc possible collisions except I find a valid usecase 
                 cell.classList.add(col)
 
                 // make editable
@@ -402,13 +412,9 @@ export class Table<Data extends TableData>{
                 let text = document.createTextNode(String(value));
                 cell.appendChild(text);
             }
-            // function to manipulate row from outside
+            // function to manipulate row from outside, after it is rendered!
             if (this.options.rowFunc) {
-                // this.options.rowFunc(this, this.tableData, keyOrIndex, row)
-
                 this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
-                // this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
-
             }
             // collapsible Row:
             if (this.options.collapsible) {
@@ -434,6 +440,8 @@ export class Table<Data extends TableData>{
                 }
             }
         }
+        // TODO: when is this used? while buildigng sdlfjs;fdl
+        this.initialized = true
         this.changeColourEvenRows()
     }
 
