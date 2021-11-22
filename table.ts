@@ -415,77 +415,81 @@ export class Table<Data extends TableData>{
             // TODO document in md
             if (isArray(this.tableData)) keyOrIndex = +keyOrIndex; //!!!!
 
-            let row = this.tableHtml.insertRow();
-
-            // transform row data, called for each row TODO: that good here or call once and set all
-            if (this.options.transformData) {
-                this.transformData(row, keyOrIndex as KeyOrIndex<Data>)
-                // this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
-            }
-
-            for (const col in this.header) {
-
-                let value
-
-                // @ts-ignore
-                // for-in and Object.Keys return elements as string, if Array its certenly a number
-                // nice and easy js solution:
-                // 
-                // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
-                value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
-
-                let cell = row.insertCell();
-
-                // set same class for each cell in a col, TODO: remove bc possible collisions except I find a valid usecase 
-                cell.classList.add(col)
-
-                // make editable
-                // TODO: move events outside in config
-                if (this.options.editable) {
-                    cell.setAttribute("contenteditable", "true")
-                    // cell.addEventListener('click', (el: any) => this.onEdit(el))
-                    cell.addEventListener('blur', (event: Event) => {
-                        this.onEdit(event, keyOrIndex)
-                    })
-                    // cell.addEventListener('keyup', (el: any) => this.onEdit(el))
-                    // cell.addEventListener('paste', (el: any) => this.onEdit(el))
-                    // cell.addEventListener('input', (el: any) => this.onEdit(el))
-                }
-
-                let text = document.createTextNode(String(value));
-                cell.appendChild(text);
-            }
-            // function to manipulate row from outside, after it is rendered!
-            if (this.options.rowFunc) {
-                this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
-            }
-            // collapsible Row:
-            if (this.options.collapsible) {
-
-                let rowHidden = this.tableHtml.insertRow();
-                let cell = rowHidden.insertCell();
-                cell.colSpan = Object.keys(this.header).length;
-                cell.style.display = "none";
-
-                // call callback function to fill the hidden cell
-                this.options.collapsible(cell, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>)
-
-                if (row) {
-                    row.onclick = () => {
-                        // toggle visibility
-                        if (cell.style.display === "none") {
-                            cell.style.removeProperty('display');
-                        } else {
-                            cell.style.display = "none";
-                        }
-
-                    }
-                }
-            }
+            this.addRow(keyOrIndex)
         }
         // TODO: when is this used? while buildigng sdlfjs;fdl
         this.initialized = true
         this.changeColourEvenRows()
+    }
+
+    addRow(keyOrIndex: string | number) {
+        let row = this.tableHtml.insertRow();
+
+        // transform row data, called for each row TODO: that good here or call once and set all
+        if (this.options.transformData) {
+            this.transformData(row, keyOrIndex as KeyOrIndex<Data>)
+            // this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
+        }
+
+        for (const col in this.header) {
+
+            let value
+
+            // @ts-ignore
+            // for-in and Object.Keys return elements as string, if Array its certenly a number
+            // nice and easy js solution:
+            // 
+            // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
+            value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
+
+            let cell = row.insertCell();
+
+            // set same class for each cell in a col, TODO: remove bc possible collisions except I find a valid usecase 
+            cell.classList.add(col)
+
+            // make editable
+            // TODO: move events outside in config
+            if (this.options.editable) {
+                cell.setAttribute("contenteditable", "true")
+                // cell.addEventListener('click', (el: any) => this.onEdit(el))
+                cell.addEventListener('blur', (event: Event) => {
+                    this.onEdit(event, keyOrIndex)
+                })
+                // cell.addEventListener('keyup', (el: any) => this.onEdit(el))
+                // cell.addEventListener('paste', (el: any) => this.onEdit(el))
+                // cell.addEventListener('input', (el: any) => this.onEdit(el))
+            }
+
+            let text = document.createTextNode(String(value));
+            cell.appendChild(text);
+        }
+        // function to manipulate row from outside, after it is rendered!
+        if (this.options.rowFunc) {
+            this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
+        }
+        // collapsible Row:
+        if (this.options.collapsible) {
+
+            let rowHidden = this.tableHtml.insertRow();
+            let cell = rowHidden.insertCell();
+            cell.colSpan = Object.keys(this.header).length;
+            cell.style.display = "none";
+
+            // call callback function to fill the hidden cell
+            this.options.collapsible(cell, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>)
+
+            if (row) {
+                row.onclick = () => {
+                    // toggle visibility
+                    if (cell.style.display === "none") {
+                        cell.style.removeProperty('display');
+                    } else {
+                        cell.style.display = "none";
+                    }
+
+                }
+            }
+        }
     }
 
     sortTable(n: number) {
