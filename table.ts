@@ -46,6 +46,10 @@ function isTableRow(test: any): test is HTMLTableRowElement {
     return test.rowIndex;
 }
 
+function isHTMLTableElement(test: any): test is HTMLTableElement {
+    return test?.tagName;
+}
+
 // Types:
 interface Dictionary<TValue> {
     [id: string]: TValue;
@@ -130,7 +134,7 @@ export interface OnEditFunc {
 // var asdf : typeof Table= Table()
 // export class Table<Data extends TableData>{
 export class Table<Data extends TableData>{
-    private tableHtml: HTMLTableElement;
+    public tableHtml: HTMLTableElement;
     private header: Dictionary<string>;
     readonly tableData: Data;
     // private _tableData: Data;
@@ -157,8 +161,9 @@ export class Table<Data extends TableData>{
      * @param tableData 
      * @param options 
      */
-    constructor(tableHtml: HTMLTableElement, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
-        this.tableHtml = tableHtml
+    constructor(tableHtmlOrString: HTMLTableElement | string | undefined, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
+
+        this.tableHtml = this.getOrCreateTableHtml(tableHtmlOrString)
         this.header = header
         // this._tableData = tableData
         this.tableData = tableData
@@ -169,6 +174,35 @@ export class Table<Data extends TableData>{
     }
 
     // TODO: getter, settter for tableData to update values in dom
+
+    getOrCreateTableHtml(tableHtmlOrString: HTMLTableElement | string | undefined) {
+        var tableHtml: HTMLTableElement
+
+        if (isHTMLTableElement(tableHtmlOrString)) {
+            tableHtml = tableHtmlOrString;
+        } else if (typeof tableHtmlOrString === "undefined") {
+            // table is created but needs to be manually added to dom
+            // id also has to be set on implementation side if needed
+            tableHtml = document.createElement("table");
+        } else if (typeof tableHtmlOrString === "string") {
+            let tableIdString = tableHtmlOrString
+            var htmlById = document.getElementById(tableHtmlOrString)
+            var tagName = htmlById?.tagName
+            if (tagName === "TABLE") {
+                tableHtml = htmlById as HTMLTableElement
+            } else {
+                tableHtml = document.createElement("table");
+                tableHtml.setAttribute("id", tableIdString)
+                if (tagName === "DIV") {
+                    htmlById?.appendChild(tableHtml)
+                }
+            }
+        }
+        else {
+            throw new ReferenceError("Table cant be initialized with provided html Element.")
+        }
+        return tableHtml
+    }
 
     getDataByIndex(row: number, col: number) {
 
@@ -304,6 +338,9 @@ export class Table<Data extends TableData>{
         var valNew = cell.innerHTML
 
         //TODO: atm onclick set the data for the clicked, then transform data, from there set all fields of the row
+        this.tableHtml.tHead = null
+        this.drawTable()
+        return
         this.setDataByIndex(rowIndexData, cellIndex, valNew)
         this.transformData(row, rowIndexData)
 
@@ -317,6 +354,10 @@ export class Table<Data extends TableData>{
 
     }
 
+    addRowOnTop(data: RowData) {
+
+    }
+
     transformData(row: HTMLTableRowElement, keyOrIndex: string | number) {
         if (this.options.transformData) {
             this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
@@ -325,7 +366,9 @@ export class Table<Data extends TableData>{
     }
 
     drawTable() {
-        console.debug('draw Table ' + this.tableHtml.id);
+        // console.debug("draw Table " + this.tableHtml.id != '' ? this.tableHtml.id : "no id - consider setting an ID before table.drawTable()");
+        console.debug("draw Table " + (this.tableHtml.id != '' ? this.tableHtml.id : "with no id - consider setting an ID before table.drawTable()"));
+        // console.debug('draw Table ' + this.tableHtml.id);
         if (this.initialized) console.warn("TODO: Possible error? drawTable should not be usded to update the table! " +
             "Instead use the update methode/s which aim to keep the data object, tablecells and its dependent fields in sync")
 
