@@ -9,7 +9,7 @@
 
 // document.getElementById('someElementId').className = 'cssClass';
 
-// TESTtd
+
 
 /**
  * basic table style
@@ -423,7 +423,7 @@ export class Table<Data extends TableData>{
     }
 
     addRow(keyOrIndex: string | number) {
-        let row = this.tableHtml.insertRow();
+        let row = document.createElement("tr");
 
         // transform row data, called for each row TODO: that good here or call once and set all
         if (this.options.transformData) {
@@ -431,18 +431,23 @@ export class Table<Data extends TableData>{
             // this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
         }
 
+        // generate columns
         for (const col in this.header) {
 
-            let value
+            let value: string;
 
             // @ts-ignore
-            // for-in and Object.Keys return elements as string, if Array its certenly a number
+            // for-in and Object.Keys return elements as string, 
+            // if Array its certenly a number; if Dict its definitely a string
             // nice and easy js solution:
             // 
             // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
             value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
 
-            let cell = row.insertCell();
+            var cell = document.createElement("td");
+
+            // TODO: Test performance difference with concated string 
+            // also create rows first then render in one go, createElement for cols instead of insertCell already makes a difference
 
             // set same class for each cell in a col, TODO: remove bc possible collisions except I find a valid usecase 
             cell.classList.add(col)
@@ -451,10 +456,11 @@ export class Table<Data extends TableData>{
             // TODO: move events outside in config
             if (this.options.editable) {
                 cell.setAttribute("contenteditable", "true")
-                // cell.addEventListener('click', (el: any) => this.onEdit(el))
                 cell.addEventListener('blur', (event: Event) => {
                     this.onEdit(event, keyOrIndex)
                 })
+                // more events but blur might be all thats needed
+                // cell.addEventListener('click', (el: any) => this.onEdit(el))
                 // cell.addEventListener('keyup', (el: any) => this.onEdit(el))
                 // cell.addEventListener('paste', (el: any) => this.onEdit(el))
                 // cell.addEventListener('input', (el: any) => this.onEdit(el))
@@ -462,7 +468,10 @@ export class Table<Data extends TableData>{
 
             let text = document.createTextNode(String(value));
             cell.appendChild(text);
+            row.appendChild(cell)
         }
+        this.tableHtml.appendChild(row)
+
         // function to manipulate row from outside, after it is rendered!
         if (this.options.rowFunc) {
             this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
