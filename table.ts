@@ -59,6 +59,8 @@ interface DictRO<T> {
     readonly [id: string]: T;
 }
 
+type ColType<Data, T> = Data;
+
 
 // TODO: implement checkbox etc. for bool
 export type RowData = Dictionary<number | string | boolean>
@@ -83,6 +85,18 @@ export interface TableOptions<Data extends TableData> {
         all: boolean,
         cols?: [string]
     },
+    filter?: boolean | {
+        filterConfig?: {} |
+        /* {
+            custom: {
+                // todo low: add cb functions for custom filters if necessary for sth at all  
+                // literal: cb
+                // string: cb
+                // num: cb
+            }
+        } */
+    },
+    search?: boolean
     editable?: OnEditFunc | boolean
 }
 
@@ -168,9 +182,19 @@ export class Table<Data extends TableData>{
         // this._tableData = tableData
         this.tableData = tableData
         this.options = options
+
         this.tableStyle = options?.tableStyle || tableStyle
         this.initialized = false
         // this.drawTable()
+    }
+
+    // call this when draw is called. so the properties can be set after initializing the table which makes type checkiing nicer
+    secondConstructor() {
+        // console.log("filterbos type")
+        // console.log(this.options.filter)
+        // console.log(typeof (this.options.filter))
+        // console.log(typeof (this.options.filter) == "object" ? this.options.filter.filterConfig:)
+        // this.options.filter = typeof (options.filter)
     }
 
     // TODO: getter, settter for tableData to update values in dom
@@ -367,13 +391,39 @@ export class Table<Data extends TableData>{
 
     drawTable() {
         // console.debug("draw Table " + this.tableHtml.id != '' ? this.tableHtml.id : "no id - consider setting an ID before table.drawTable()");
-        console.debug("draw Table " + (this.tableHtml.id != '' ? this.tableHtml.id : "with no id - consider setting an ID before table.drawTable()"));
-        // console.debug('draw Table ' + this.tableHtml.id);
+        console.debug("draw Table " + (this.tableHtml.id != '' ? this.tableHtml.id : "with no id - consider setting an ID before table.drawTable()") + " with " + this.tableData.length + " rows");
+
+        // call these things here so i can set them after new Table and before drawing
+        // TODO: check if this makes sense
+        this.secondConstructor()
+
         if (this.initialized) console.warn("TODO: Possible error? drawTable should not be usded to update the table! " +
             "Instead use the update methode/s which aim to keep the data object, tablecells and its dependent fields in sync")
 
         // HEADER
         let thead = this.tableHtml.createTHead();
+
+        // insert searchbar in header if option is checked
+        if (this.options.search) {
+            let searchRow = thead.insertRow();
+
+            let searchInput = document.createElement("input");
+            searchInput.type = "text";
+            searchInput.placeholder = "Searcg for anything in Row or filter";
+            searchInput.id = this.tableHtml.id + "_search"
+            searchInput.onkeyup = () => { this.filter_searchAndFilters() }
+            searchRow.append(searchInput)
+
+            // <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names..">
+
+        }
+
+        // insert filter box in header if option is checked
+        var filterRow = null
+        if (this.options.filter) {
+            filterRow = thead.insertRow();
+        }
+
         let rowHeader = thead.insertRow();
         var colNr = 0;
         for (let key in this.header) {
@@ -407,6 +457,9 @@ export class Table<Data extends TableData>{
         // if(Array.isArray(this.tableData)) keyOrIndex = 7
 
 
+        let tbody = this.tableHtml.createTBody();
+
+        // TODO: check this here y did i not put it in the function??
         // for in returns key (and also Array index) as string
         for (keyOrIndex in this.tableData) {
 
@@ -415,14 +468,19 @@ export class Table<Data extends TableData>{
             // TODO document in md
             if (isArray(this.tableData)) keyOrIndex = +keyOrIndex; //!!!!
 
-            this.addRow(keyOrIndex)
+            this.addRow(tbody, keyOrIndex)
+        }
+
+        // filter box for this table
+        if (filterRow) {
+            this.addFilterBox(filterRow)
         }
         // TODO: when is this used? while buildigng sdlfjs;fdl
         this.initialized = true
         this.changeColourEvenRows()
     }
 
-    addRow(keyOrIndex: string | number) {
+    addRow(tbody: HTMLTableSectionElement, keyOrIndex: string | number) {
         let row = document.createElement("tr");
 
         // transform row data, called for each row TODO: that good here or call once and set all
@@ -470,7 +528,9 @@ export class Table<Data extends TableData>{
             cell.appendChild(text);
             row.appendChild(cell)
         }
-        this.tableHtml.appendChild(row)
+        // add row to table body
+        tbody.appendChild(row)
+        // this.tableHtml.tBodies[0].appendChild(row)
 
         // function to manipulate row from outside, after it is rendered!
         if (this.options.rowFunc) {
@@ -501,6 +561,191 @@ export class Table<Data extends TableData>{
         }
     }
 
+
+
+    addFilterBox(filterRow: HTMLTableRowElement) {
+        console.log("add filter box for table " + this.tableHtml.id)
+
+        let config;
+        if (typeof (this.options.filter) == "object" && this.options.filter.filterConfig) {
+            config = this.options.filter.filterConfig
+
+        }
+        else if (this.options.filter == true) {
+            // TODO detect reoccuring values and provide filter
+        }
+        else {
+            console.error("this should not happen, filters should not be activiated for this table right?")
+        }
+
+        console.log("filter config")
+        console.log(config)
+
+        // insert filters in cols
+        for (let key in this.header) {
+            let filterCol = document.createElement("td");
+
+            let type = config[key]
+            if (Array.isArray(type)) {
+                // string literal filter
+                // TODO low: add custom filter cb 
+                // if (this.options.filter.custom) {}
+
+                // invert selection
+                let divInvert = document.createElement("div");
+                divInvert.innerHTML = "invert"
+                filterCol.append(divInvert)
+
+                for (const val of type) {
+                    let div = document.createElement("div");
+                    div.innerHTML = val
+                    div.classList.add("table-filter-literal")
+                    div.addEventListener("click", () => this.onSwitchfilter(div, val, key))
+                    filterCol.append(div)
+                }
+            } else if (typeof (type) === "number") {
+                // range filter
+                let inputBottom = document.createElement("input");
+                let inputTop = document.createElement("input");
+                inputBottom.placeholder = "min val"
+                inputTop.placeholder = "max val"
+                inputBottom.classList.add("table-filter-range")
+                inputTop.classList.add("table-filter-range")
+
+                filterCol.append(inputBottom, " < x < ", inputTop)
+
+
+            } else if (typeof (type) === "string") {
+                // search filter
+                let searchInput = document.createElement("input");
+                searchInput.placeholder = "filter " + key
+                searchInput.classList.add("table-filter-search-col")
+                filterCol.append(searchInput)
+
+            } else {
+                // todo: handle undefined
+                // throw "filter config has invalid values in col " + key
+            }
+            // let text = document.createTextNode(type);
+            // filterCol.appendChild(text);
+            filterRow.appendChild(filterCol);
+        }
+
+
+    }
+
+    onSwitchfilter(divHtml: HTMLDivElement, filterVal: string, colKey?: string) {
+        // todo, idea maybe build data graph with filter values use it to import the possibilities instead of array and to store the state for custom tables
+
+        divHtml.classList.toggle("table-filter-val-toggle")
+
+        this.filter(filterVal, colKey)
+    }
+
+    // onSearch(input: HTMLInputElement) {
+
+    //     let filter = input.value.toLowerCase();
+    //     let rowsT = this.tableHtml.tBodies[0].rows
+    //     var cells, txtValue;
+    //     console.time('test');
+    //     for (let i = 0; i < rowsT.length; i++) {
+    //         // console.log(rowsT[i])
+    //         var rowVisible = false
+
+    //         cells = rowsT[i].getElementsByTagName("td");
+    //         for (let j = 0; j < cells.length; j++) {
+    //             let cell = cells[j]
+
+    //             if (cell) {
+    //                 txtValue = cell.textContent || cell.innerText;
+    //                 let cellVal = txtValue.toLowerCase().replace(",", "")
+    //                 if (cellVal.indexOf(filter) > -1) {
+    //                     rowVisible = true
+    //                     break;
+    //                 }
+    //             }
+    //         }
+
+    //         if (rowVisible == false) {
+    //             rowsT[i].style.display = "none";
+    //         }
+
+    //     }
+    //     console.timeEnd('test');
+    // }
+
+    // combined filter, applies every filter and search input 
+    // filter_searchAndFilters(input: HTMLInputElement) {
+    filter_searchAndFilters(filterVal: string, colKey?: string) {
+        let search = document.getElementById(this.tableHtml.id + "_search") as HTMLInputElement;
+
+        let rowsT = this.tableHtml.tBodies[0].rows
+        var cells, txtValue;
+        console.time('test');
+        for (let i = 0; i < rowsT.length; i++) {
+            // console.log(rowsT[i])
+            var rowVisible = false
+
+            // loop thru all cols, eg. for search
+            cells = rowsT[i].getElementsByTagName("td");
+            if (search) {
+                for (let j = 0; j < cells.length; j++) {
+                    let searchVal = search.value.toLocaleLowerCase();
+                    let cell = cells[j]
+                    if (cell) {
+                        txtValue = cell.textContent || cell.innerText;
+                        let cellVal = txtValue.toLowerCase().replace(",", "")
+                        if (cellVal.indexOf(searchVal) > -1) {
+                            rowVisible = true
+                            break;
+                        }
+                    }
+                }
+            }
+
+            if (rowVisible == false) {d
+                rowsT[i].style.display = "none";
+            }
+
+        }
+        console.timeEnd('test');
+    }
+
+    filter(filterVal: string, colKey?: string) {
+        console.log("colKey")
+        console.log(filterVal)
+        // implemented for array, todo: implement all that shit for dict or just map it
+        if (Array.isArray(this.tableData)) {
+            // by col and bool selection
+            if (colKey && filterVal) {
+
+                // go thru data and filter
+                var rowNr = 0
+                var hitNr = 0
+                var rowsT = this.tableHtml.tBodies[0].rows // rowT - html, rowD - data
+                console.log("rowsT.length")
+                console.log(rowsT.length)
+                for (const rowD of this.tableData) {
+                    let val = rowD[colKey]
+                    let rowT = rowsT[rowNr]
+                    // console.log(row)
+                    if (val === filterVal) {
+                        console.log(rowT.style.display)
+                        if (rowT.style.display == "none") {
+                            rowT.style.display = ""
+                        } else {
+                            rowT.style.display = "none"
+                        }
+
+                        hitNr++
+                    }
+                    rowNr++
+                }
+
+            }
+            // todo: by string or num range, by col or whole thing
+        }
+    }
     sortTable(n: number) {
         console.log('sorting the table')
         // Inserting more than one row is not rlly necessary.
@@ -516,11 +761,13 @@ export class Table<Data extends TableData>{
         while (switching) {
             //start by saying: no switching is done:
             switching = false;
-            rows = table.rows;
+            // only rows in body, leave header rows out of it
+            rows = table.tBodies[0].rows;
+
             /*Loop through all table rows (except the
                 first, which contains table headers):*/
 
-            for (i = 1; i < (rows.length - rowOffset); i = i + rowOffset) {
+            for (i = 0; i < (rows.length - rowOffset); i = i + rowOffset) {
                 //start by saying there should be no switching:
                 shouldSwitch = false;
                 /*Get the two elements you want to compare,
