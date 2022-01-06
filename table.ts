@@ -70,6 +70,8 @@ export type TableData = RowData[] | Dictionary<RowData>;
 // used for callback functions to hint the correct index type
 export type KeyOrIndex<data> = data extends Array<RowData> ? number : string;
 
+type FilterConfig = Dictionary<any> // todo
+
 
 /**
  * optional table Params
@@ -86,13 +88,12 @@ export interface TableOptions<Data extends TableData> {
         cols?: [string]
     },
     filter?: boolean | {
-        filterConfig?: {} |
+        filterConfig?: FilterConfig
         /* {
+            |
             custom: {
                 // todo low: add cb functions for custom filters if necessary for sth at all  
-                // literal: cb
-                // string: cb
-                // num: cb
+                // cb to define literal, string, num or whatever 
             }
         } */
     },
@@ -154,6 +155,7 @@ export class Table<Data extends TableData>{
     // private _tableData: Data;
     public options: TableOptions<Data>;
     private tableStyle: Dictionary<Dictionary<string>>;
+    private filterConfig: FilterConfig | null
     public initialized: boolean;
 
     //  get tableData() {
@@ -184,17 +186,16 @@ export class Table<Data extends TableData>{
         this.options = options
 
         this.tableStyle = options?.tableStyle || tableStyle
+
         this.initialized = false
         // this.drawTable()
     }
 
     // call this when draw is called. so the properties can be set after initializing the table which makes type checkiing nicer
     secondConstructor() {
-        // console.log("filterbos type")
-        // console.log(this.options.filter)
-        // console.log(typeof (this.options.filter))
-        // console.log(typeof (this.options.filter) == "object" ? this.options.filter.filterConfig:)
-        // this.options.filter = typeof (options.filter)
+        // check once here or every time where now if(!this.filterConfig)
+        // would only make sense if the filter can be removed and the table does not re-draw
+        this.filterConfig = (typeof (this.options.filter) == "object" && this.options.filter.filterConfig) ? this.options.filter.filterConfig : null
     }
 
     // TODO: getter, settter for tableData to update values in dom
@@ -411,7 +412,7 @@ export class Table<Data extends TableData>{
             searchInput.type = "text";
             searchInput.placeholder = "Searcg for anything in Row or filter";
             searchInput.id = this.tableHtml.id + "_search"
-            searchInput.onkeyup = () => { this.filter_searchAndFilters() }
+            searchInput.onkeyup = () => { this.filter_oneAtATime() }
             searchRow.append(searchInput)
 
             // <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names..">
@@ -567,9 +568,8 @@ export class Table<Data extends TableData>{
         console.log("add filter box for table " + this.tableHtml.id)
 
         let config;
-        if (typeof (this.options.filter) == "object" && this.options.filter.filterConfig) {
-            config = this.options.filter.filterConfig
-
+        if (this.filterConfig) {
+            config = this.filterConfig
         }
         else if (this.options.filter == true) {
             // TODO detect reoccuring values and provide filter
@@ -586,7 +586,7 @@ export class Table<Data extends TableData>{
             let filterCol = document.createElement("td");
 
             let type = config[key]
-            if (Array.isArray(type)) {
+            if (typeof type == "object") {
                 // string literal filter
                 // TODO low: add custom filter cb 
                 // if (this.options.filter.custom) {}
@@ -596,14 +596,14 @@ export class Table<Data extends TableData>{
                 divInvert.innerHTML = "invert"
                 filterCol.append(divInvert)
 
-                for (const val of type) {
+                for (const val of Object.keys(type)) {
                     let div = document.createElement("div");
                     div.innerHTML = val
                     div.classList.add("table-filter-literal")
                     div.addEventListener("click", () => this.onSwitchfilter(div, val, key))
                     filterCol.append(div)
                 }
-            } else if (typeof (type) === "number") {
+            } else if (type === "number") {
                 // range filter
                 let inputBottom = document.createElement("input");
                 let inputTop = document.createElement("input");
@@ -615,7 +615,7 @@ export class Table<Data extends TableData>{
                 filterCol.append(inputBottom, " < x < ", inputTop)
 
 
-            } else if (typeof (type) === "string") {
+            } else if (type === "string") {
                 // search filter
                 let searchInput = document.createElement("input");
                 searchInput.placeholder = "filter " + key
@@ -624,7 +624,7 @@ export class Table<Data extends TableData>{
 
             } else {
                 // todo: handle undefined
-                // throw "filter config has invalid values in col " + key
+                throw "filter config has invalid values in col " + key
             }
             // let text = document.createTextNode(type);
             // filterCol.appendChild(text);
@@ -637,9 +637,22 @@ export class Table<Data extends TableData>{
     onSwitchfilter(divHtml: HTMLDivElement, filterVal: string, colKey?: string) {
         // todo, idea maybe build data graph with filter values use it to import the possibilities instead of array and to store the state for custom tables
 
-        divHtml.classList.toggle("table-filter-val-toggle")
+        let include = !divHtml.classList.toggle("table-filter-val-exclude")
 
-        this.filter(filterVal, colKey)
+        if (this.filterConfig && colKey) {
+            // set filter state in filterconfig (filter enabled / disabled) 
+            this.filterConfig[colKey][filterVal] = include;
+        }
+
+        console.log("swithced filter")
+        console.log(this.filterConfig)
+
+        let filter = {
+            val: filterVal,
+            include: include
+        }
+
+        this.filter_oneAtATime(filter, colKey)
     }
 
     // onSearch(input: HTMLInputElement) {
@@ -676,42 +689,127 @@ export class Table<Data extends TableData>{
 
     // combined filter, applies every filter and search input 
     // filter_searchAndFilters(input: HTMLInputElement) {
-    filter_searchAndFilters(filterVal: string, colKey?: string) {
+    filter_byConfig(filter?: { val: string, include: boolean }, colKey?: string) {
+    }
+    filter_oneAtATime(filter?: { val: string, include: boolean }, colKey?: string) {
+        // function is triggered when a filter changes and the change gets applied
+        //      filter is col specific
+        // row:
+        // disable? - just remove if visible
+        // enable? - if it is disabled enable and apply all other filters again
+        console.log("filter?.include")
+        console.log(filter?.include)
+        console.log(filter?.val)
         let search = document.getElementById(this.tableHtml.id + "_search") as HTMLInputElement;
 
         let rowsT = this.tableHtml.tBodies[0].rows
+        let rowsD = this.tableData
         var cells, txtValue;
         console.time('test');
-        for (let i = 0; i < rowsT.length; i++) {
-            // console.log(rowsT[i])
-            var rowVisible = false
 
-            // loop thru all cols, eg. for search
-            cells = rowsT[i].getElementsByTagName("td");
-            if (search) {
-                for (let j = 0; j < cells.length; j++) {
-                    let searchVal = search.value.toLocaleLowerCase();
-                    let cell = cells[j]
-                    if (cell) {
-                        txtValue = cell.textContent || cell.innerText;
-                        let cellVal = txtValue.toLowerCase().replace(",", "")
-                        if (cellVal.indexOf(searchVal) > -1) {
-                            rowVisible = true
-                            break;
+        // check each row:
+        for (let i = 0; i < rowsT.length; i++) {
+
+            if (Array.isArray(rowsD) && colKey) {
+                let rowD = rowsD[i]
+                let val = rowD[colKey]
+                let rowT = rowsT[i]
+
+                // filter not present - skip row
+                if (val != filter?.val) continue;
+
+                if (rowT.style.display === "none" && filter.include === true) {
+                    console.log("removed filter")
+                    // depending on other filters, enable it
+                    if (!this.filterConfig) throw new Error("cant filter, No Filter Config")
+                    // console.log("config")
+                    // console.log(this.filterConfig)
+                    var rowVisible = true
+
+                    for (let col in this.header) {
+                        let filterConfCol = this.filterConfig[col]
+                        let val = rowD[col]
+
+                        if (!filterConfCol) continue;
+
+                        if (typeof filterConfCol == "object") {
+                            for (const literal in filterConfCol) {
+                                console.log(filterConfCol)
+                                const include = filterConfCol[literal];
+                                // if exclude - compare with actual value in cell - if match remove row 
+
+                                if (include) continue;
+                                if (literal === val) rowVisible = false;
+                            }
+                            if (!rowVisible) break;
+
+                        } else if (filterConfCol === "number") {
+
+                        } else if (filterConfCol === "string") {
+
+                        } else {
+                            // todo: handle undefined
+                            throw "filter config has invalid values in col " + col
                         }
                     }
+
+                    // re-enable row
+                    if (rowVisible == true) {
+                        console.log("row true")
+                        rowsT[i].style.display = "";
+                    }
+
+                } else if (rowT.style.display == "" && filter.include === false) {
+                    rowT.style.display = "none"
                 }
+
+
+                /*                 if (filter?.include === false) {
+                                    // dont include
+                                    // check for none or just set, test what is faster Todo
+                                    if (rowT.style.display != "none") {
+                                        rowT.style.display = "none"
+                                        // rowVisible = false
+                                    }
+                                } else if (rowT.style.display == "none") {
+                                    // include if other filters dont remove it - style none ether other filter removed it or the filter has just been re-enabled
+                
+                                } */
             }
 
-            if (rowVisible == false) {d
-                rowsT[i].style.display = "none";
-            }
+            // loop thru all cols, eg. for search
+            // cells = rowsT[i].getElementsByTagName("td");
+            // if (search.value) {
+            //     console.log("filter for search")
+            //     for (let j = 0; j < cells.length; j++) {
+            //         let searchVal = search.value.toLocaleLowerCase();
+            //         let cell = cells[j]
+            //         if (cell) {
+            //             txtValue = cell.textContent || cell.innerText;
+            //             let cellVal = txtValue.toLowerCase().replace(",", "")
+            //             if (cellVal.indexOf(searchVal) > -1) {
+            //                 rowVisible = true
+            //                 break;
+            //             }
+            //         }
+            //     }
+            // }
+
+
+
+
+            // if (rowVisible == false) {
+            //     console.log(rowVisible)
+            //     rowsT[i].style.display = "none";
+            // } else {
+            //     rowsT[i].style.display = "";
+            // }
 
         }
         console.timeEnd('test');
     }
 
-    filter(filterVal: string, colKey?: string) {
+    filter(filterVal?: string, colKey?: string) {
         console.log("colKey")
         console.log(filterVal)
         // implemented for array, todo: implement all that shit for dict or just map it
