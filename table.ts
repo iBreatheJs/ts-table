@@ -692,6 +692,7 @@ export class Table<Data extends TableData>{
     filter_byConfig(filter?: { val: string, include: boolean }, colKey?: string) {
     }
     filter_oneAtATime(filter?: { val: string, include: boolean }, colKey?: string) {
+        // test
         // function is triggered when a filter changes and the change gets applied
         //      filter is col specific
         // row:
