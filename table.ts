@@ -7,6 +7,8 @@
 // style.innerHTML = '.hidden { display: none; }';
 // document.getElementsByTagName('head')[0].appendChild(style);
 
+import { kdf } from "crypto-js";
+
 // document.getElementById('someElementId').className = 'cssClass';
 
 
@@ -412,7 +414,13 @@ export class Table<Data extends TableData>{
             searchInput.type = "text";
             searchInput.placeholder = "Searcg for anything in Row or filter";
             searchInput.id = this.tableHtml.id + "_search"
-            searchInput.onkeyup = () => { this.filter_oneAtATime() }
+
+            searchInput.onkeyup = () => {
+                
+                
+                this.filter_oneAtATime() 
+            
+            }
             searchRow.append(searchInput)
 
             // <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names..">
@@ -691,16 +699,30 @@ export class Table<Data extends TableData>{
     // filter_searchAndFilters(input: HTMLInputElement) {
     filter_byConfig(filter?: { val: string, include: boolean }, colKey?: string) {
     }
-    filter_oneAtATime(filter?: { val: string, include: boolean }, colKey?: string) {
-        // test
+
+    /**
+     * @description takes one change in filter config 
+     * loop over all entries and hide / show
+     * @param filter 
+     * @param colKey 
+     */
+    filter_oneAtATime(filter: { val: string, include: boolean }, colKey?: string) {
+        // colKey: if not set -> all cols
+
         // function is triggered when a filter changes and the change gets applied
         //      filter is col specific
+        //      or all cols, eg. search
+        // TODO: ASK: integrate some type of interrupt, webworkers, timeout, etc for when filters r set fast and tables r big
         // row:
         // disable? - just remove if visible
         // enable? - if it is disabled enable and apply all other filters again
-        console.log("filter?.include")
-        console.log(filter?.include)
-        console.log(filter?.val)
+
+        // narrow or widening is considered here.
+        // only bother with rows not included if filter gets removed / widening
+
+
+        // if search input:
+        //      add search string as filter to visible rows
         let search = document.getElementById(this.tableHtml.id + "_search") as HTMLInputElement;
 
         let rowsT = this.tableHtml.tBodies[0].rows
@@ -709,73 +731,108 @@ export class Table<Data extends TableData>{
         console.time('test');
 
         // check each row:
+        // todo change to data instead of dom and benchmark
         for (let i = 0; i < rowsT.length; i++) {
 
-            if (Array.isArray(rowsD) && colKey) {
+            if (Array.isArray(rowsD)) {
                 let rowD = rowsD[i]
-                let val = rowD[colKey]
+
+                if (colKey) {
+                    let val = rowD[colKey]
+                    if (val != filter?.val) continue;
+                }
+
                 let rowT = rowsT[i]
-
+                // todo: what if search triggers it!??!?!1 add param or sth else
                 // filter not present - skip row
-                if (val != filter?.val) continue;
 
-                if (rowT.style.display === "none" && filter.include === true) {
-                    console.log("removed filter")
-                    // depending on other filters, enable it
+                // loop over all cols - ether filters need to be re-applied or search is filtering
+                // row is hidden but filter says show it:
+                // if ((rowT.style.display === "none" && filter.include === true) || (rowT.style.display === "" && search.value)) {
+                if ((rowT.style.display === "none" && filter.include === true)) {
+                    // console.log("removed filter")
                     if (!this.filterConfig) throw new Error("cant filter, No Filter Config")
-                    // console.log("config")
-                    // console.log(this.filterConfig)
+
+                    // depending on other filters, enable it
                     var rowVisible = true
+                    // set true when search val is found in row or no search val
+                    var rowVisibleSearch = search.value ? false : true;
+
+                    //todo
+                    // check if any other filter is false --> hide
+                    //      if yes - continue dont bother search val
+                    //      if not - check all cols for search val
+
 
                     for (let col in this.header) {
-                        let filterConfCol = this.filterConfig[col]
-                        let val = rowD[col]
+                        // already checked before, but idk if this if helps at all todo
+                        // if(col === colKey) continue;
 
+                        // check cols for searchstring until found --> then know its not hidden --> unhide
+                        if (search.value && rowVisibleSearch === false) {
+                            console.log("filter search")
+                            let searchVal = search.value.toLocaleLowerCase();
+                            let cellVal = String(rowD[col])
+                            console.log("cellVal")
+                            console.log(cellVal)
+
+                            cellVal = cellVal.toLowerCase().replace(",", "")
+                            if (cellVal.indexOf(searchVal) > -1) {
+                                console.log(cellVal + "cellval u searchval" + searchVal)
+                                rowVisibleSearch = true
+                                // break;
+                            }
+                        }
+
+                        // check if any filter hides row --> then break and keep hidden
+                        let filterConfCol = this.filterConfig[col]
+                        // console.log("filterConfCol")
+                        // console.log(col)
                         if (!filterConfCol) continue;
 
-                        if (typeof filterConfCol == "object") {
+                        // cell value
+                        let cellVal = rowD[col]
+
+                        // check for filter till filter matches --> then hide
+                        if (typeof filterConfCol == "object" && rowVisible) { // todo
                             for (const literal in filterConfCol) {
-                                console.log(filterConfCol)
+                                console.log(literal)
                                 const include = filterConfCol[literal];
                                 // if exclude - compare with actual value in cell - if match remove row 
 
                                 if (include) continue;
-                                if (literal === val) rowVisible = false;
+                                if (literal === cellVal) { rowVisible = false; break; }
                             }
-                            if (!rowVisible) break;
+                            // if (!rowVisible) break;
 
                         } else if (filterConfCol === "number") {
 
                         } else if (filterConfCol === "string") {
 
                         } else {
+                            console.log(rowVisible)
+
                             // todo: handle undefined
                             throw "filter config has invalid values in col " + col
                         }
+
+                        // if(!rowVisible || rowVisibleSearch) break;
+                        if (!rowVisible) break;
                     }
 
                     // re-enable row
-                    if (rowVisible == true) {
+                    if (rowVisible && rowVisibleSearch) {
                         console.log("row true")
                         rowsT[i].style.display = "";
+                    } else {
+                        // todo shouldnt be here should be iin funct
+                        // rowsT[i].style.display = "none";
                     }
 
                 } else if (rowT.style.display == "" && filter.include === false) {
                     rowT.style.display = "none"
                 }
 
-
-                /*                 if (filter?.include === false) {
-                                    // dont include
-                                    // check for none or just set, test what is faster Todo
-                                    if (rowT.style.display != "none") {
-                                        rowT.style.display = "none"
-                                        // rowVisible = false
-                                    }
-                                } else if (rowT.style.display == "none") {
-                                    // include if other filters dont remove it - style none ether other filter removed it or the filter has just been re-enabled
-                
-                                } */
             }
 
             // loop thru all cols, eg. for search
