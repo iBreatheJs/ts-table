@@ -414,12 +414,20 @@ export class Table<Data extends TableData>{
             searchInput.type = "text";
             searchInput.placeholder = "Searcg for anything in Row or filter";
             searchInput.id = this.tableHtml.id + "_search"
+            searchInput.value
 
-            searchInput.onkeyup = () => {
-                
-                
-                this.filter_oneAtATime() 
-            
+            let searchVal = "";
+            searchInput.onkeyup = (ev) => {
+                if (searchInput.value === searchVal) return;
+
+                let filter = {
+                    val: searchInput.value,
+                    include: searchInput.value < searchVal ? true : false // true -> deleted char -> include hidden rows(depending on other filters), false - added char --> narrow / remove visible rows
+                }
+                searchVal = searchInput.value;
+
+                this.filter_oneAtATime(filter)
+
             }
             searchRow.append(searchInput)
 
@@ -720,6 +728,13 @@ export class Table<Data extends TableData>{
         // narrow or widening is considered here.
         // only bother with rows not included if filter gets removed / widening
 
+        console.log(filter)
+
+        // triggered by search:
+        // no colKey - check each col till found --> then include the row
+        // include true - widen - check hidden rows for filter.val
+        // include false - narrow - check visible rows for filter.val
+
 
         // if search input:
         //      add search string as filter to visible rows
@@ -727,7 +742,6 @@ export class Table<Data extends TableData>{
 
         let rowsT = this.tableHtml.tBodies[0].rows
         let rowsD = this.tableData
-        var cells, txtValue;
         console.time('test');
 
         // check each row:
@@ -773,16 +787,18 @@ export class Table<Data extends TableData>{
                             console.log("filter search")
                             let searchVal = search.value.toLocaleLowerCase();
                             let cellVal = String(rowD[col])
-                            console.log("cellVal")
-                            console.log(cellVal)
 
                             cellVal = cellVal.toLowerCase().replace(",", "")
                             if (cellVal.indexOf(searchVal) > -1) {
-                                console.log(cellVal + "cellval u searchval" + searchVal)
+                                // console.log(cellVal + "cellval u searchval" + searchVal)
                                 rowVisibleSearch = true
                                 // break;
                             }
                         }
+                        // todo remove this bs
+                        // when search triggers this func: only need to check search val other filters r already applied
+                        // fail!! not when removing... could be good performance boost to seperate filters and search depending on search behaviour / like search only filters already filtered rows
+                        // if (!colKey) {console.log("continue bc serach");continue;} 
 
                         // check if any filter hides row --> then break and keep hidden
                         let filterConfCol = this.filterConfig[col]
@@ -796,7 +812,6 @@ export class Table<Data extends TableData>{
                         // check for filter till filter matches --> then hide
                         if (typeof filterConfCol == "object" && rowVisible) { // todo
                             for (const literal in filterConfCol) {
-                                console.log(literal)
                                 const include = filterConfCol[literal];
                                 // if exclude - compare with actual value in cell - if match remove row 
 
@@ -820,9 +835,8 @@ export class Table<Data extends TableData>{
                         if (!rowVisible) break;
                     }
 
-                    // re-enable row
+                    // re-enable row , todo move out of if
                     if (rowVisible && rowVisibleSearch) {
-                        console.log("row true")
                         rowsT[i].style.display = "";
                     } else {
                         // todo shouldnt be here should be iin funct
@@ -830,8 +844,42 @@ export class Table<Data extends TableData>{
                     }
 
                 } else if (rowT.style.display == "" && filter.include === false) {
-                    rowT.style.display = "none"
+                    // this row should be excluded and colKey matches value (checked at start of fumc)
+                    if (colKey) {
+                        rowT.style.display = "none";
+                        continue;
+                    }
+                    console.log("should be search only")
+
+                    let rowVisibleSearch = false
+                    // search text was appended
+                    for (let col in this.header) {
+                        // already checked before, but idk if this if helps at all todo
+                        // if(col === colKey) continue;
+
+                        // check cols for searchstring until found --> then know its not hidden --> unhide
+                        if (rowVisibleSearch === false) {
+                            console.log("filter search")
+                            let searchVal = search.value.toLocaleLowerCase();
+                            let cellVal = String(rowD[col])
+                            
+
+                            cellVal = cellVal.toLowerCase().replace(",", "")
+                            if (cellVal.indexOf(searchVal) > -1) {
+                                console.log(cellVal + "cellval u searchval" + searchVal)
+                                rowVisibleSearch = true
+                                break;
+                            }
+                        }
+                    }
+
+                    if (!rowVisibleSearch) {
+                        console.log("row true")
+                        rowsT[i].style.display = "none";
+                    }
+
                 }
+
 
             }
 
