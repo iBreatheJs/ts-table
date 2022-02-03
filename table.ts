@@ -100,6 +100,7 @@ export interface TableOptions<Data extends TableData> {
         } */
     },
     search?: boolean
+    rowCount?: boolean
     editable?: OnEditFunc | boolean
 }
 
@@ -407,14 +408,19 @@ export class Table<Data extends TableData>{
         let thead = this.tableHtml.createTHead();
 
         // insert searchbar in header if option is checked
+        let searchRow = thead.insertRow();
+        let searchCell = document.createElement("td");
+        searchCell.setAttribute("colspan", String(Object.keys(this.header).length))
+        searchRow.append(searchCell)
+
+
         if (this.options.search) {
-            let searchRow = thead.insertRow();
 
             let searchInput = document.createElement("input");
             searchInput.type = "text";
             searchInput.placeholder = "Searcg for anything in Row or filter";
             searchInput.id = this.tableHtml.id + "_search"
-            searchInput.value
+            searchInput.style.float = "left"; // todo better style wo float
 
             let searchVal = "";
             searchInput.onkeyup = (ev) => {
@@ -429,11 +435,20 @@ export class Table<Data extends TableData>{
                 this.filter_oneAtATime(filter)
 
             }
-            searchRow.append(searchInput)
-
-            // <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for names..">
-
+            searchCell.append(searchInput)
         }
+
+        if (this.options.rowCount != false) {
+            let rowCnterHtml = document.createElement("div");
+            rowCnterHtml.id = this.tableHtml.id + "_row-counter";
+            rowCnterHtml.innerHTML = String(this.tableData.length)
+            console.log("counter")
+            console.log(rowCnterHtml)
+            searchCell.append(rowCnterHtml)
+        }
+
+
+
 
         // insert filter box in header if option is checked
         var filterRow = null
@@ -640,7 +655,7 @@ export class Table<Data extends TableData>{
 
             } else {
                 // todo: handle undefined
-                throw "filter config has invalid values in col " + key
+                // throw "filter config has invalid values in col " + key
             }
             // let text = document.createTextNode(type);
             // filterCol.appendChild(text);
@@ -712,26 +727,35 @@ export class Table<Data extends TableData>{
      * @description takes one change in filter config 
      * loop over all entries and hide / show
      * @param filter 
-     * @param colKey 
+     * @param filter.val value for comparison
+     * @param filter.include true = filter removed, false = filter applied //wether row with matching val should be included or removed
+     * @param colKey if not set -> all cols - equivalent to search
      */
     filter_oneAtATime(filter: { val: string, include: boolean }, colKey?: string) {
-        // colKey: if not set -> all cols
-
         // function is triggered when a filter changes and the change gets applied
-        //      filter is col specific
-        //      or all cols, eg. search
-        // TODO: ASK: integrate some type of interrupt, webworkers, timeout, etc for when filters r set fast and tables r big
-        // row:
-        // disable? - just remove if visible
-        // enable? - if it is disabled enable and apply all other filters again
-
+        // executed for EVERY change in filter config - one change at a time
+        // 
+        // filter is ether:
+        //      - col specific
+        //      - all cols - search
+        // 
         // narrow or widening is considered here.
         // only bother with rows not included if filter gets removed / widening
+        // 
+        // DOM manipulation:
+        // All possible rows, stored in tableData, are created and depending on filtering
+        // with CSS display property hidden.
+        // 
+        // Thoughts:
+        // TODO: ASK: integrate some type of interrupt, webworkers, timeout, etc for when filters r set fast and tables r big
+        // different cases and, exiting loops etc is pretty well considered i think, but sadly its compleately negligible in comparison to painting the dom.
+        // this is the real bottleneck 
+        // had a lot of thoughts on paging n caching etc. but might just be enough to keep everything in mem to sort n filter but limit rendered results to eg 50 row page which renders fast af. 
 
         console.log(filter)
 
         // triggered by search:
-        // no colKey - check each col till found --> then include the row
+        // no colKey - check EVERY col till val found --> then include the row
         // include true - widen - check hidden rows for filter.val
         // include false - narrow - check visible rows for filter.val
 
@@ -747,27 +771,30 @@ export class Table<Data extends TableData>{
         // check each row:
         // todo change to data instead of dom and benchmark
         for (let i = 0; i < rowsT.length; i++) {
-
             if (Array.isArray(rowsD)) {
+                
                 let rowD = rowsD[i]
-
+                // skip row if current filter does not match
                 if (colKey) {
                     let val = rowD[colKey]
                     if (val != filter?.val) continue;
                 }
-
+                
                 let rowT = rowsT[i]
-                // todo: what if search triggers it!??!?!1 add param or sth else
-                // filter not present - skip row
+                
+                // rows affected by filter modification:
+                // case 1: row is hidden and filter gets removed
+                //      check wether it should be made visible
+                // case 2: row is visible and filter gets applied
+                //      check if filter.incude is false -> hide
+                
 
-                // loop over all cols - ether filters need to be re-applied or search is filtering
-                // row is hidden but filter says show it:
-                // if ((rowT.style.display === "none" && filter.include === true) || (rowT.style.display === "" && search.value)) {
+                // case 1: row is hidden but filter says show it:
                 if ((rowT.style.display === "none" && filter.include === true)) {
                     // console.log("removed filter")
                     if (!this.filterConfig) throw new Error("cant filter, No Filter Config")
 
-                    // depending on other filters, enable it
+                    // depending on other filters, re-enable row
                     var rowVisible = true
                     // set true when search val is found in row or no search val
                     var rowVisibleSearch = search.value ? false : true;
@@ -782,6 +809,7 @@ export class Table<Data extends TableData>{
                         // already checked before, but idk if this if helps at all todo
                         // if(col === colKey) continue;
 
+                        // SEARCH
                         // check cols for searchstring until found --> then know its not hidden --> unhide
                         if (search.value && rowVisibleSearch === false) {
                             console.log("filter search")
@@ -790,23 +818,16 @@ export class Table<Data extends TableData>{
 
                             cellVal = cellVal.toLowerCase().replace(",", "")
                             if (cellVal.indexOf(searchVal) > -1) {
-                                // console.log(cellVal + "cellval u searchval" + searchVal)
                                 rowVisibleSearch = true
                                 // break;
                             }
                         }
-                        // todo remove this bs
-                        // when search triggers this func: only need to check search val other filters r already applied
-                        // fail!! not when removing... could be good performance boost to seperate filters and search depending on search behaviour / like search only filters already filtered rows
-                        // if (!colKey) {console.log("continue bc serach");continue;} 
 
+                        // OTHER FILTERS
                         // check if any filter hides row --> then break and keep hidden
                         let filterConfCol = this.filterConfig[col]
-                        // console.log("filterConfCol")
-                        // console.log(col)
                         if (!filterConfCol) continue;
 
-                        // cell value
                         let cellVal = rowD[col]
 
                         // check for filter till filter matches --> then hide
@@ -862,7 +883,7 @@ export class Table<Data extends TableData>{
                             console.log("filter search")
                             let searchVal = search.value.toLocaleLowerCase();
                             let cellVal = String(rowD[col])
-                            
+
 
                             cellVal = cellVal.toLowerCase().replace(",", "")
                             if (cellVal.indexOf(searchVal) > -1) {
@@ -879,38 +900,23 @@ export class Table<Data extends TableData>{
                     }
 
                 }
-
-
             }
+        }
 
-            // loop thru all cols, eg. for search
-            // cells = rowsT[i].getElementsByTagName("td");
-            // if (search.value) {
-            //     console.log("filter for search")
-            //     for (let j = 0; j < cells.length; j++) {
-            //         let searchVal = search.value.toLocaleLowerCase();
-            //         let cell = cells[j]
-            //         if (cell) {
-            //             txtValue = cell.textContent || cell.innerText;
-            //             let cellVal = txtValue.toLowerCase().replace(",", "")
-            //             if (cellVal.indexOf(searchVal) > -1) {
-            //                 rowVisible = true
-            //                 break;
-            //             }
-            //         }
-            //     }
-            // }
-
-
-
-
-            // if (rowVisible == false) {
-            //     console.log(rowVisible)
-            //     rowsT[i].style.display = "none";
-            // } else {
-            //     rowsT[i].style.display = "";
-            // }
-
+        // visible row number:
+        // todo
+        // could work that into the above loop, but for some reason when testing it is even slower without this extra loop than with it?? wtf!! and if not it still doesnt matter bc slow af rendering taking 100x of script
+        // todo check with option to disable row cnt. i think it will not create the html n therefore not execute here 
+        let rowCnterHtml = document.getElementById(this.tableHtml.id + "_row-counter")
+        if (rowCnterHtml) {
+            let cntRowsVisible = 0
+            for (let i = 0; i < rowsT.length; i++) {
+                let rowT = rowsT[i]
+                if (rowT.style.display == "") {
+                    cntRowsVisible++
+                }
+            }
+            rowCnterHtml.innerHTML = String(cntRowsVisible) + " / " + String(rowsT.length)
         }
         console.timeEnd('test');
     }
