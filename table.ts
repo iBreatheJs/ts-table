@@ -7,10 +7,10 @@
 // style.innerHTML = '.hidden { display: none; }';
 // document.getElementsByTagName('head')[0].appendChild(style);
 
-import { kdf } from "crypto-js";
+import { InputNice } from "../input-nice/inputNice";
+
 
 // document.getElementById('someElementId').className = 'cssClass';
-
 
 
 /**
@@ -49,7 +49,14 @@ function isTableRow(test: any): test is HTMLTableRowElement {
 }
 
 function isHTMLTableElement(test: any): test is HTMLTableElement {
-    return test?.tagName;
+    return test.tagName == "TABLE";
+}
+function isHTMLDivElement(test: any): test is HTMLDivElement {
+    return test.tagName == "TABLE";
+}
+
+function isHtmlElement(test: any): test is HTMLElement {
+    return test.tagName;
 }
 
 // Types:
@@ -161,15 +168,8 @@ export class Table<Data extends TableData>{
     private filterConfig: FilterConfig | null
     public initialized: boolean;
 
-    //  get tableData() {
-    //     return this._tableData
-    // }
-
-    // public set tableData(tableData) {
-    //     console.log("setter table data")
-    //     this._tableData = tableData;
-    //     // this.updateTableValues()
-    // }
+    private searchHtml: HTMLInputElement | null;
+    private rowCntHtml: HTMLDivElement | null;
 
 
 
@@ -180,9 +180,9 @@ export class Table<Data extends TableData>{
      * @param tableData 
      * @param options 
      */
-    constructor(tableHtmlOrString: HTMLTableElement | string | undefined, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
+    constructor(container: HTMLTableElement | string | undefined | null, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
 
-        this.tableHtml = this.getOrCreateTableHtml(tableHtmlOrString)
+        this.tableHtml = this.getOrCreateTableHtml(container ?? null)
         this.header = header
         // this._tableData = tableData
         this.tableData = tableData
@@ -191,6 +191,16 @@ export class Table<Data extends TableData>{
         this.tableStyle = options?.tableStyle || tableStyle
 
         this.initialized = false
+
+        // this.rowCntHtml = this.options.rowCount != false ? (() => {
+        //     let rowCntHtml = document.createElement("div");
+        //     rowCntHtml.id = this.tableHtml.id + "_row-counter";
+        //     rowCntHtml.innerHTML = String(this.tableData.length)
+        //     return rowCntHtml
+        // })(): null
+
+        this.rowCntHtml = null;
+        this.searchHtml = null;
         // this.drawTable()
     }
 
@@ -201,34 +211,75 @@ export class Table<Data extends TableData>{
         this.filterConfig = (typeof (this.options.filter) == "object" && this.options.filter.filterConfig) ? this.options.filter.filterConfig : null
     }
 
-    // TODO: getter, settter for tableData to update values in dom
 
-    getOrCreateTableHtml(tableHtmlOrString: HTMLTableElement | string | undefined) {
+    /**
+     * 
+     * @param container  
+     *      @type {HtmlTableElement} - use provided table
+     *      @type {string} - create table if no table, create table in div if div
+     *      @type {undefined} - create table, dev has to add to dom //todo
+     * @returns 
+     */
+    getOrCreateTableHtml(container: HTMLTableElement | string | null) {
         var tableHtml: HTMLTableElement
 
-        if (isHTMLTableElement(tableHtmlOrString)) {
-            tableHtml = tableHtmlOrString;
-        } else if (typeof tableHtmlOrString === "undefined") {
+        // if NO container - create ONLY in memory and auto assign name as "table_<num>" 
+        if (!container) {
+            let num = 1
+            // get consecutive ID which is not in use alread
+            while (document.getElementById("table_" + num)) {
+                num++
+            }
+            container = "table_" + num
+            console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id')
+        }
+
+        console.log("penene")
+        // param is table
+        if (isHTMLTableElement(container)) {
+            return container;
+        }
+        //  else if (isHTMLDivElement(container)) {
+        //     // tableHtml = container;
+        //     // todo handle div
+        //     throw "todo handle div as tableHtml param"
+        // }
+        else if (container === "null") {
+            // todo already handled above
+            // param is undefined
             // table is created but needs to be manually added to dom
             // id also has to be set on implementation side if needed
             tableHtml = document.createElement("table");
-        } else if (typeof tableHtmlOrString === "string") {
-            let tableIdString = tableHtmlOrString
-            var htmlById = document.getElementById(tableHtmlOrString)
-            var tagName = htmlById?.tagName
+
+        } else if (typeof container === "string" || isHtmlElement(container)) {
+            // param is string or HtmlElement
+            // check if exists, if not create
+
+            let html = document.getElementById(container)
+            // let tableIdString = container
+            // var htmlById = document.getElementById(container)
+            var tagName = html?.tagName
             if (tagName === "TABLE") {
-                tableHtml = htmlById as HTMLTableElement
+                return html
             } else {
-                tableHtml = document.createElement("table");
-                tableHtml.setAttribute("id", tableIdString)
+                // cases:
+                //  string
+                //      existing
+                //          table
+                //          div
+                //      new
+                //  div
+                let tableHtml = document.createElement("table");
+                tableHtml.setAttribute("id", container)
                 if (tagName === "DIV") {
                     htmlById?.appendChild(tableHtml)
                 }
             }
         }
         else {
-            throw new ReferenceError("Table cant be initialized with provided html Element.")
+            new ReferenceError("Table cant be initialized with provided html Element.")
         }
+
         return tableHtml
     }
 
@@ -355,20 +406,28 @@ export class Table<Data extends TableData>{
     // update cell value
     // TODO: maybe more params could be needed outside in the callback, eg. pass table
     onEdit(event: Event, keyOrIndex: string | number) {
+
         let cell = event.currentTarget as HTMLTableCellElement
         let row = cell.parentElement as HTMLTableRowElement
 
         let cellIndex = cell.cellIndex
 
-        // when getting index from table, -1 because of header
-        let rowIndexData = row.rowIndex - 1
+        let inputConf = {}
+        let input = new InputNice(cell, inputConf)
+
+        // when getting row index from table, substract header rows
+        // todo: do that everywhere or keep as class property
+        let theadRowCnt = this.tableHtml.tHead?.rows.length
+        let rowIndexData = row.rowIndex - (theadRowCnt ?? 0)
 
         var valNew = cell.innerHTML
 
+        TODO: //left of here.. updates 2 rows above some index error..
+
         //TODO: atm onclick set the data for the clicked, then transform data, from there set all fields of the row
-        this.tableHtml.tHead = null
-        this.drawTable()
-        return
+        // this.tableHtml.tHead = null
+        // this.drawTable()
+        // return
         this.setDataByIndex(rowIndexData, cellIndex, valNew)
         this.transformData(row, rowIndexData)
 
@@ -401,10 +460,35 @@ export class Table<Data extends TableData>{
         // TODO: check if this makes sense
         this.secondConstructor()
 
+        // check if table exists in DOM
+        setTimeout(() => {
+            if (!document.getElementById(this.tableHtml.id)) console.warn("Table " + this.tableHtml.id + " was drawn 5s ago, but does not exist on DOM, verify tableHtml param or add manually");
+        }, 5000);
+        // if (!document.getElementById(this.tableHtml.id)) console.error("Table " + this.tableHtml.id + " should bo added to DOM before it can be drawn, verify tableHtml param or add manually");
+
+        // set to true once table is drawn
         if (this.initialized) console.warn("TODO: Possible error? drawTable should not be usded to update the table! " +
             "Instead use the update methode/s which aim to keep the data object, tablecells and its dependent fields in sync")
 
+
+        // always enclose table in div necessary for positioning overlay for auto compleate suggestions
+        // possibly todo check with grid module: if parent is body the div gets added at the bottom which moves everything defined below in html file above
+        this.tableHtml.style.position = "absolute"
+        if (!this.tableHtml.closest("div")) {
+            let parent = this.tableHtml.parentNode
+            if (parent) {
+                let div = document.createElement("div");
+                div.setAttribute("id", this.tableHtml.id + "-div")
+                div.style.position = "relative"
+                parent.appendChild(div)
+                div.appendChild(this.tableHtml)
+            } else {
+                throw ("cant create parent div for table " + this.tableHtml.id + " no parentNode found")
+            }
+        }
+
         // HEADER
+        console.log(this.tableHtml)
         let thead = this.tableHtml.createTHead();
 
         // insert searchbar in header if option is checked
@@ -438,13 +522,12 @@ export class Table<Data extends TableData>{
             searchCell.append(searchInput)
         }
 
+        // i'll leave this check here instead of constructor so the table can be redrawn with diffrent params - idk if theres a case for that tho
         if (this.options.rowCount != false) {
-            let rowCnterHtml = document.createElement("div");
-            rowCnterHtml.id = this.tableHtml.id + "_row-counter";
-            rowCnterHtml.innerHTML = String(this.tableData.length)
-            console.log("counter")
-            console.log(rowCnterHtml)
-            searchCell.append(rowCnterHtml)
+            this.rowCntHtml = document.createElement("div");
+            this.rowCntHtml.id = this.tableHtml.id + "_row-counter";
+            this.rowCntHtml.innerHTML = String(this.tableData.length)
+            searchCell.append(this.rowCntHtml)
         }
 
 
@@ -762,7 +845,7 @@ export class Table<Data extends TableData>{
 
         // if search input:
         //      add search string as filter to visible rows
-        let search = document.getElementById(this.tableHtml.id + "_search") as HTMLInputElement;
+        let search = this.searchHtml
 
         let rowsT = this.tableHtml.tBodies[0].rows
         let rowsD = this.tableData
@@ -772,22 +855,22 @@ export class Table<Data extends TableData>{
         // todo change to data instead of dom and benchmark
         for (let i = 0; i < rowsT.length; i++) {
             if (Array.isArray(rowsD)) {
-                
+
                 let rowD = rowsD[i]
                 // skip row if current filter does not match
                 if (colKey) {
                     let val = rowD[colKey]
                     if (val != filter?.val) continue;
                 }
-                
+
                 let rowT = rowsT[i]
-                
+
                 // rows affected by filter modification:
                 // case 1: row is hidden and filter gets removed
                 //      check wether it should be made visible
                 // case 2: row is visible and filter gets applied
                 //      check if filter.incude is false -> hide
-                
+
 
                 // case 1: row is hidden but filter says show it:
                 if ((rowT.style.display === "none" && filter.include === true)) {
@@ -797,7 +880,7 @@ export class Table<Data extends TableData>{
                     // depending on other filters, re-enable row
                     var rowVisible = true
                     // set true when search val is found in row or no search val
-                    var rowVisibleSearch = search.value ? false : true;
+                    var rowVisibleSearch = search?.value ? false : true;
 
                     //todo
                     // check if any other filter is false --> hide
@@ -811,7 +894,7 @@ export class Table<Data extends TableData>{
 
                         // SEARCH
                         // check cols for searchstring until found --> then know its not hidden --> unhide
-                        if (search.value && rowVisibleSearch === false) {
+                        if (search?.value && rowVisibleSearch === false) {
                             console.log("filter search")
                             let searchVal = search.value.toLocaleLowerCase();
                             let cellVal = String(rowD[col])
@@ -907,8 +990,7 @@ export class Table<Data extends TableData>{
         // todo
         // could work that into the above loop, but for some reason when testing it is even slower without this extra loop than with it?? wtf!! and if not it still doesnt matter bc slow af rendering taking 100x of script
         // todo check with option to disable row cnt. i think it will not create the html n therefore not execute here 
-        let rowCnterHtml = document.getElementById(this.tableHtml.id + "_row-counter")
-        if (rowCnterHtml) {
+        if (this.rowCntHtml) {
             let cntRowsVisible = 0
             for (let i = 0; i < rowsT.length; i++) {
                 let rowT = rowsT[i]
@@ -916,7 +998,7 @@ export class Table<Data extends TableData>{
                     cntRowsVisible++
                 }
             }
-            rowCnterHtml.innerHTML = String(cntRowsVisible) + " / " + String(rowsT.length)
+            this.rowCntHtml.innerHTML = String(cntRowsVisible) + " / " + String(rowsT.length)
         }
         console.timeEnd('test');
     }
