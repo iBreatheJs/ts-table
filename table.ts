@@ -9,6 +9,13 @@
 
 import { InputNice } from "../input-nice/inputNice";
 
+const registry = new FinalizationRegistry(heldValue => {
+    console.log("GC test")
+    console.log("GC for Table " + heldValue)
+});
+
+
+
 
 // document.getElementById('someElementId').className = 'cssClass';
 
@@ -152,13 +159,16 @@ export interface OnEditFunc {
     ): void
 }
 
-
+export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefined | null
 
 // ASK: can i configure private interfaces for the class
 // that reference tableData without the need to always n everywherer pass the generic type
 // var asdf : typeof Table= Table()
 // export class Table<Data extends TableData>{
 export class Table<Data extends TableData>{
+    static tablesInstCnt: number = 0 // Number of Tables instantiated
+    static tablesActiveCnt: number = 0 // Number of currently existing Table Instances
+
     public tableHtml: HTMLTableElement;
     private header: Dictionary<string>;
     readonly tableData: Data;
@@ -172,7 +182,6 @@ export class Table<Data extends TableData>{
     private rowCntHtml: HTMLDivElement | null;
 
 
-
     /**
      * 
      * @param tableHtml 
@@ -180,9 +189,12 @@ export class Table<Data extends TableData>{
      * @param tableData 
      * @param options 
      */
-    constructor(container: HTMLTableElement | string | undefined | null, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
+    constructor(container: TableContainer, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
+        Table.tablesInstCnt++; // Number of Tables instantiated
+        Table.tablesActiveCnt++; // Number of currently existing Table Instances
 
         this.tableHtml = this.getOrCreateTableHtml(container ?? null)
+        registry.register(this, this.tableHtml);
         this.header = header
         // this._tableData = tableData
         this.tableData = tableData
@@ -198,6 +210,8 @@ export class Table<Data extends TableData>{
         //     rowCntHtml.innerHTML = String(this.tableData.length)
         //     return rowCntHtml
         // })(): null
+        
+        this.filterConfig = null
 
         this.rowCntHtml = null;
         this.searchHtml = null;
@@ -219,68 +233,83 @@ export class Table<Data extends TableData>{
      *      @type {string} - create table if no table, create table in div if div
      *      @type {undefined} - create table, dev has to add to dom //todo
      * @returns 
+     * 
+     * @description
+     * assign HTMLTableElement to this.tableHtml or throw error
+     * Table is ether:
+     *      - passed to constructor
+     *      - checked for in DOM (string)
+     *      - created (string, div, undefined, null)
+     * 
+     * ID is:
+     *      - kept (arg: Table, string which is ID of Table found in DOM)
+     *      - assigned (string which is ID of div or new ID, div) - format: table_<string> eg. table_name
+     *          - div: use id of div and prefix with "table_"
+     *      - generated (undefined, null) - format: table_<number> eg. table_15 - num based on Tables instantiated
+     * 
+     * ERROR: 
+     *      invalid container type //todo consider error log but creating table
+     *      
+     * todo consider always assigning an ID in case the passed element has none 
      */
-    getOrCreateTableHtml(container: HTMLTableElement | string | null) {
+    getOrCreateTableHtml(container: TableContainer) {
+
         var tableHtml: HTMLTableElement
+        let id;
 
         // if NO container - create ONLY in memory and auto assign name as "table_<num>" 
         if (!container) {
-            let num = 1
-            // get consecutive ID which is not in use alread
+            // get uniqe ID based on tables instantiated
+            let num = Table.tablesInstCnt
+            // in case it was created by sth other than this lib
             while (document.getElementById("table_" + num)) {
                 num++
             }
-            container = "table_" + num
+            id = "table_" + num
             console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id')
         }
 
-        console.log("penene")
-        // param is table
-        if (isHTMLTableElement(container)) {
-            return container;
+        // can only be string or HtmlElement (undefined -> string) // todo could be removed most likely
+        if (typeof container !== "string" && !isHtmlElement(container)) {
+           throw new ReferenceError("Table cant be initialized with provided container.")
         }
-        //  else if (isHTMLDivElement(container)) {
-        //     // tableHtml = container;
-        //     // todo handle div
-        //     throw "todo handle div as tableHtml param"
-        // }
-        else if (container === "null") {
-            // todo already handled above
-            // param is undefined
-            // table is created but needs to be manually added to dom
-            // id also has to be set on implementation side if needed
-            tableHtml = document.createElement("table");
 
-        } else if (typeof container === "string" || isHtmlElement(container)) {
-            // param is string or HtmlElement
-            // check if exists, if not create
+        // check DOM
+        let html = typeof container === "string" ?
+            document.getElementById(container) :
+            container
 
-            let html = document.getElementById(container)
-            // let tableIdString = container
-            // var htmlById = document.getElementById(container)
+        if (!html) {
+            // element not found, create it ONLY IN MEMORY:
+            let tableHtml = document.createElement("table");
+            tableHtml.classList.add("table-basic")
+
+            // let id = html.id ? html.id : String(Table.tablesInstCnt)
+            // todo id
+            tableHtml.setAttribute("id", "table_" + id)
+            // html.appendChild(tableHtml)
+
+            return tableHtml as HTMLTableElement
+
+        } else {
+            // element found, check tag
             var tagName = html?.tagName
             if (tagName === "TABLE") {
-                return html
-            } else {
-                // cases:
-                //  string
-                //      existing
-                //          table
-                //          div
-                //      new
-                //  div
+                return html as HTMLTableElement
+            }
+            else if (tagName === "DIV") {
                 let tableHtml = document.createElement("table");
-                tableHtml.setAttribute("id", container)
-                if (tagName === "DIV") {
-                    htmlById?.appendChild(tableHtml)
-                }
+                tableHtml.classList.add("table-basic")
+                let id = html.id ? html.id : String(Table.tablesInstCnt)
+                tableHtml.setAttribute("id", "table_" + id)
+                html.appendChild(tableHtml)
+
+                return tableHtml as HTMLTableElement
+            }
+            else {
+                throw new Error("Cant initialize Table with provided container, invalid Tag name")
             }
         }
-        else {
-            new ReferenceError("Table cant be initialized with provided html Element.")
-        }
-
-        return tableHtml
     }
 
     getDataByIndex(row: number, col: number) {
@@ -505,6 +534,7 @@ export class Table<Data extends TableData>{
             searchInput.placeholder = "Searcg for anything in Row or filter";
             searchInput.id = this.tableHtml.id + "_search"
             searchInput.style.float = "left"; // todo better style wo float
+            this.searchHtml = searchInput
 
             let searchVal = "";
             searchInput.onkeyup = (ev) => {
@@ -687,9 +717,12 @@ export class Table<Data extends TableData>{
         }
         else if (this.options.filter == true) {
             // TODO detect reoccuring values and provide filter
+            config = this.filterConfig
+
+            throw new Error(" not implemented")
         }
         else {
-            console.error("this should not happen, filters should not be activiated for this table right?")
+            throw console.error("this should not happen, filters should not be activiated for this table right?")
         }
 
         console.log("filter config")
@@ -871,28 +904,36 @@ export class Table<Data extends TableData>{
                 // case 2: row is visible and filter gets applied
                 //      check if filter.incude is false -> hide
 
+                // set true when search val is found in row or no search val
+                var rowVisibleSearch = search?.value ? false : true;
 
-                // case 1: row is hidden but filter says show it:
+                // case 1: row is hidden but filter says SHOW it:
+                // removed filter / shortened searchstring
+                // widen data, add rows
                 if ((rowT.style.display === "none" && filter.include === true)) {
                     // console.log("removed filter")
                     if (!this.filterConfig) throw new Error("cant filter, No Filter Config")
 
                     // depending on other filters, re-enable row
                     var rowVisible = true
-                    // set true when search val is found in row or no search val
-                    var rowVisibleSearch = search?.value ? false : true;
-
-                    //todo
-                    // check if any other filter is false --> hide
-                    //      if yes - continue dont bother search val
-                    //      if not - check all cols for search val
 
 
                     for (let col in this.header) {
+                        // search - check cols till 
+                        //      - found then break: show
+                        //      - end reached: hide
+                        // filters - check cols till
+                        //      - filter match then break: hide
+                        //      - end reached wo match: show
+                        // 
+                        // both true: show
+
                         // already checked before, but idk if this if helps at all todo
                         // if(col === colKey) continue;
 
                         // SEARCH
+
+                        // search was shortened
                         // check cols for searchstring until found --> then know its not hidden --> unhide
                         if (search?.value && rowVisibleSearch === false) {
                             console.log("filter search")
@@ -942,27 +983,47 @@ export class Table<Data extends TableData>{
                     // re-enable row , todo move out of if
                     if (rowVisible && rowVisibleSearch) {
                         rowsT[i].style.display = "";
+                        continue; // i think todo test
                     } else {
                         // todo shouldnt be here should be iin funct
                         // rowsT[i].style.display = "none";
                     }
 
+                    // case 2: row is visible but filter says HIDE it:
+                    // added filter / appended searchstring
+                    // narrow data, remove rows
                 } else if (rowT.style.display == "" && filter.include === false) {
                     // this row should be excluded and colKey matches value (checked at start of fumc)
                     if (colKey) {
                         rowT.style.display = "none";
                         continue;
                     }
-                    console.log("should be search only")
 
-                    let rowVisibleSearch = false
+                    // SEARCH
                     // search text was appended
+                    console.log("should be search only")
+                    // let rowVisibleSearch = false
+
                     for (let col in this.header) {
+                        // 1. filter added
+                        //      check specific col
+                        //      - filter match: hide and continue (alredy done above)
+                        // 2. search appended
+                        //      check cols till.. 
+                        //      - found then break: show
+                        //      - end reached: hide
+                        //      filters - check cols till
+                        //          - filter match then break: hide
+                        //          - end reached wo match: show
+                        // 
+                        // both true: show //todo was here try to find the commonalities n reduce
+
                         // already checked before, but idk if this if helps at all todo
                         // if(col === colKey) continue;
 
-                        // check cols for searchstring until found --> then know its not hidden --> unhide
-                        if (rowVisibleSearch === false) {
+                        // check cols for searchstring until found --> then know its not hidden
+                        // if end reached --> hide
+                        if (search?.value && rowVisibleSearch === false) {
                             console.log("filter search")
                             let searchVal = search.value.toLocaleLowerCase();
                             let cellVal = String(rowD[col])
