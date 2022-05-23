@@ -1,3 +1,6 @@
+// @ts-nocheck
+// TODO!!: fix ts
+
 import { mapTransactionData } from "../../../mapData";
 import { fetchEzy } from "../../../utils";
 import { TableData } from "../table";
