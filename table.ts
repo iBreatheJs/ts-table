@@ -41,7 +41,7 @@ export var tableStyle = {
         border: '1px solid #ddd',
         padding: '8px',
         whiteSpace: 'nowrap',
-        // backgroundColor: 'green'
+        backgroundColor: 'green'
     }
 }
 
@@ -88,12 +88,22 @@ export type KeyOrIndex<data> = data extends Array<RowData> ? number : string;
 
 type FilterConfig = Dictionary<any> // todo
 
+export type EditOptions = {
+
+    editable?: OnEditFunc | true
+    extendableRows?: boolean
+} | {
+    editable?: false
+    extendableRows?: false
+}
+
 
 /**
  * optional table Params
  * TODO: document params
  */
-export interface TableOptions<Data extends TableData> {
+export interface TableOptions1<Data extends TableData> {
+    // edit?: edit
     tableStyle?: Dictionary<Dictionary<string>>,
     alternateColour?: boolean //default true
     transformData?: RowFunc<Data>,
@@ -115,8 +125,13 @@ export interface TableOptions<Data extends TableData> {
     },
     search?: boolean
     rowCount?: boolean
-    editable?: OnEditFunc | boolean
+    showRules?: boolean
+    // editable?: OnEditFunc | true | false
+    // extendableRows?: asdf
 }
+
+export type TableOptions<Data extends TableData> = TableOptions1<Data> & EditOptions
+
 
 // TODO, ASK: should the Data be passed as an immutable type in the beginning and then only in the table set data methode be casted?? 
 // propably, now its still mutable thru the variable thats passed into the table
@@ -170,7 +185,8 @@ export class Table<Data extends TableData>{
     static tablesActiveCnt: number = 0 // Number of currently existing Table Instances
 
     public tableHtml: HTMLTableElement;
-    private header: Dictionary<string>;
+    // private header: Dictionary<string>; // what shoudl be private?? todo
+    public header: Dictionary<string>;
     readonly tableData: Data;
     // private _tableData: Data;
     public options: TableOptions<Data>;
@@ -210,7 +226,7 @@ export class Table<Data extends TableData>{
         //     rowCntHtml.innerHTML = String(this.tableData.length)
         //     return rowCntHtml
         // })(): null
-        
+
         this.filterConfig = null
 
         this.rowCntHtml = null;
@@ -237,8 +253,8 @@ export class Table<Data extends TableData>{
      * @description
      * assign HTMLTableElement to this.tableHtml or throw error
      * Table is ether:
-     *      - passed to constructor
-     *      - checked for in DOM (string)
+     *      - passed to constructor (table)
+     *      - found in DOM (string)
      *      - created (string, div, undefined, null)
      * 
      * ID is:
@@ -257,8 +273,14 @@ export class Table<Data extends TableData>{
         var tableHtml: HTMLTableElement
         let id;
 
+        // check DOM
+        let html = typeof container === "string" ?
+            document.getElementById(container) :
+            container
+
+
         // if NO container - create ONLY in memory and auto assign name as "table_<num>" 
-        if (!container) {
+        /* if (!container) {
             // get uniqe ID based on tables instantiated
             let num = Table.tablesInstCnt
             // in case it was created by sth other than this lib
@@ -267,26 +289,37 @@ export class Table<Data extends TableData>{
             }
             id = "table_" + num
             console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id')
-        }
+        } */
 
         // can only be string or HtmlElement (undefined -> string) // todo could be removed most likely
-        if (typeof container !== "string" && !isHtmlElement(container)) {
-           throw new ReferenceError("Table cant be initialized with provided container.")
-        }
+        // if (typeof container !== "string" && !isHtmlElement(container)) {
+        //     throw new ReferenceError("Table cant be initialized with provided container.")
+        // }
 
-        // check DOM
-        let html = typeof container === "string" ?
-            document.getElementById(container) :
-            container
+
 
         if (!html) {
+            // get uniqe ID based on tables instantiated
+            let num = Table.tablesInstCnt
+            // in case it was created by sth other than this lib
+            while (document.getElementById("table_" + num)) {
+                num++
+            }
+            id = "table-" + num
+
+            if (!container) {
+                console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id')
+            }
+
+
+
             // element not found, create it ONLY IN MEMORY:
             let tableHtml = document.createElement("table");
             tableHtml.classList.add("table-basic")
 
             // let id = html.id ? html.id : String(Table.tablesInstCnt)
             // todo id
-            tableHtml.setAttribute("id", "table_" + id)
+            tableHtml.setAttribute("id", id)
             // html.appendChild(tableHtml)
 
             return tableHtml as HTMLTableElement
@@ -301,7 +334,7 @@ export class Table<Data extends TableData>{
                 let tableHtml = document.createElement("table");
                 tableHtml.classList.add("table-basic")
                 let id = html.id ? html.id : String(Table.tablesInstCnt)
-                tableHtml.setAttribute("id", "table_" + id)
+                tableHtml.setAttribute("id", "table-" + id)
                 html.appendChild(tableHtml)
 
                 return tableHtml as HTMLTableElement
@@ -365,7 +398,7 @@ export class Table<Data extends TableData>{
      */
     // TODO: private?
     public updateTableValues(rowIndexData?: number, colIndex?: number, colStr?: string) {
-
+        // WARN!! atm compleately useless caus it doesnt do shit n value is there when u enter it by edit... needed for programatically updating. maybe
         // TODO: atm if table already rendered, render the row
         if (this.initialized) {
             colIndex = undefined;
@@ -373,13 +406,22 @@ export class Table<Data extends TableData>{
         }
         // check data structure
         if (Array.isArray(this.tableData)) { //TODO!!! check dependency fields
-            let rows = this.tableHtml.rows
+            let rows = this.tableHtml.tBodies[0].rows;
+
+            // console.log("rowIndexData")
+            // console.log(rowIndexData)
+            // console.log("colIndex")
+            // console.log(colIndex)
+            // console.log("colStr")
+            // console.log(colStr)
+
 
             // if row, col param updat only what is necessary
             if (rowIndexData != undefined && colIndex != undefined && colStr != undefined) {
                 console.log("update table value")
                 // index in table is shifted by 1 bc of header
-                let rowIndexTable = rowIndexData + 1;
+                let rowIndexTable = rowIndexData; // stopped here asdfasdf changed to only use body but now have to remove the offset i added somewher
+                // let rowIndexTable = rowIndexData + 1;
 
                 let cell = rows[rowIndexTable].cells[colIndex]
                 cell.innerHTML = String(this.tableData[rowIndexData][colStr])
@@ -387,34 +429,35 @@ export class Table<Data extends TableData>{
             }
 
             // data starting with index 0, table starting with index 1 because 0 is the header
-            let rowIndex = rowIndexData != undefined ? rowIndexData + 1 : 1
+            // let rowIndex = rowIndexData != undefined ? rowIndexData : 1
+            let rowIndex = rowIndexData;
             let rowIndexEnd = rowIndexData != undefined ? rowIndexData + 2 : rows.length
 
             // update all cells / one specific row
             console.log(rowIndexData === undefined ? "update ALLL table values" : "update table Row " + rowIndex)
 
+            // fixed some issues by switching from offset for header to using table.body....
+            // i think below was used bc of tax calc that needs to update multiple cells caus dependencies... this has to be redone in a better way.  
             // starting with index 1; 0 is the header
-            for (rowIndex; rowIndex < rowIndexEnd; rowIndex++) {
-                const row = rows[rowIndex];
-
-                let cells = row.cells
-
-                for (let colIndex = 0; colIndex < cells.length; colIndex++) {
-                    const cell = cells[colIndex];
-                    // cell.classList.add("bluee")
-
-                    // todo need that?
-                    let headerKeys = Object.keys(this.header)
-                    let key = headerKeys[colIndex]
-
-                    // console.log(this.tableData[dataRowIndex][key])
-                    // console.log('innerhtml')
-                    // console.log(this.tableData[rowIndex][key])
-
-                    // data starting with index 0, table starting with index 1 because 0 is the header
-                    cell.innerHTML = String(this.tableData[rowIndex - 1][key])
-                }
-            }
+            /*             for (rowIndex; rowIndex < rowIndexEnd; rowIndex++) {
+                            const row = rows[rowIndex];
+            
+                            let cells = row.cells
+            
+                            for (let colIndex = 0; colIndex < cells.length; colIndex++) {
+                                const cell = cells[colIndex];
+            
+                                // todo need that?
+                                let headerKeys = Object.keys(this.header)
+                                let key = headerKeys[colIndex]
+            
+            
+            
+                                // data starting with index 0, table starting with index 1 because 0 is the header
+                                cell.innerHTML = String(this.tableData[rowIndex - 1][key])
+                            }
+                        } */
+            console.log(this.tableData)
         }
     }
 
@@ -435,14 +478,19 @@ export class Table<Data extends TableData>{
     // update cell value
     // TODO: maybe more params could be needed outside in the callback, eg. pass table
     onEdit(event: Event, keyOrIndex: string | number) {
+        let autocomplete = false // dev, todo implement with option
+
+
 
         let cell = event.currentTarget as HTMLTableCellElement
         let row = cell.parentElement as HTMLTableRowElement
 
         let cellIndex = cell.cellIndex
 
-        let inputConf = {}
-        let input = new InputNice(cell, inputConf)
+        if (autocomplete) {
+            let inputConf = {}
+            let input = new InputNice(cell, inputConf)
+        }
 
         // when getting row index from table, substract header rows
         // todo: do that everywhere or keep as class property
@@ -482,6 +530,7 @@ export class Table<Data extends TableData>{
     }
 
     drawTable() {
+        console.time("drawTable")
         // console.debug("draw Table " + this.tableHtml.id != '' ? this.tableHtml.id : "no id - consider setting an ID before table.drawTable()");
         console.debug("draw Table " + (this.tableHtml.id != '' ? this.tableHtml.id : "with no id - consider setting an ID before table.drawTable()") + " with " + this.tableData.length + " rows");
 
@@ -555,6 +604,7 @@ export class Table<Data extends TableData>{
         // i'll leave this check here instead of constructor so the table can be redrawn with diffrent params - idk if theres a case for that tho
         if (this.options.rowCount != false) {
             this.rowCntHtml = document.createElement("div");
+            this.rowCntHtml.style.float = "left"; // todo better style wo float
             this.rowCntHtml.id = this.tableHtml.id + "_row-counter";
             this.rowCntHtml.innerHTML = String(this.tableData.length)
             searchCell.append(this.rowCntHtml)
@@ -567,6 +617,19 @@ export class Table<Data extends TableData>{
         var filterRow = null
         if (this.options.filter) {
             filterRow = thead.insertRow();
+            let btn = document.createElement("button");
+            btn.style.float = "left"; // todo better style wo float
+            btn.textContent = "fltr"
+            searchCell.append(btn)
+        }
+        
+        if (this.options.showRules) {
+            let rulesRow = thead.insertRow();
+            let btn = document.createElement("button");
+            btn.textContent = "rulez"
+            btn.style.float = "left"; // todo better style wo float
+            searchCell.append(btn)
+            rulesRow.innerHTML = "rulez"
         }
 
         let rowHeader = thead.insertRow();
@@ -616,6 +679,11 @@ export class Table<Data extends TableData>{
             this.addRow(tbody, keyOrIndex)
         }
 
+        // add row
+        if (this.options.extendableRows) {
+            let tbody = this.tableHtml.createTBody();
+            this.addRow(tbody, "header")
+        }
         // filter box for this table
         if (filterRow) {
             this.addFilterBox(filterRow)
@@ -623,9 +691,11 @@ export class Table<Data extends TableData>{
         // TODO: when is this used? while buildigng sdlfjs;fdl
         this.initialized = true
         this.changeColourEvenRows()
+        
+        console.timeEnd("drawTable")
     }
 
-    addRow(tbody: HTMLTableSectionElement, keyOrIndex: string | number) {
+    addRow(tbody: HTMLTableSectionElement, keyOrIndex: string | number | "header") {
         let row = document.createElement("tr");
 
         // transform row data, called for each row TODO: that good here or call once and set all
@@ -638,16 +708,32 @@ export class Table<Data extends TableData>{
         for (const col in this.header) {
 
             let value: string;
+            let cell = document.createElement("td");
 
-            // @ts-ignore
-            // for-in and Object.Keys return elements as string, 
-            // if Array its certenly a number; if Dict its definitely a string
-            // nice and easy js solution:
-            // 
-            // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
-            value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
+            if (keyOrIndex == "header") {
+                value = col
+                
+                cell.addEventListener('click', (event: Event) => {
+                    console.log("new cell click event")
+                    cell.innerHTML = ""
+                    // this.onEdit(event, keyOrIndex)
+                })
+                cell.addEventListener('blur', (event: Event) => {
+                    console.log("new cell blur event")
+                    if (cell.innerHTML == "") cell.innerHTML = value
+                    // this.onEdit(event, keyOrIndex)
+                })
+                
+            } else {
+                // @ts-ignore
+                // for-in and Object.Keys return elements as string, 
+                // if Array its certenly a number; if Dict its definitely a string
+                // nice and easy js solution:
+                // 
+                // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
+                value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
+            }
 
-            var cell = document.createElement("td");
 
             // TODO: Test performance difference with concated string 
             // also create rows first then render in one go, createElement for cols instead of insertCell already makes a difference
@@ -1175,7 +1261,8 @@ export class Table<Data extends TableData>{
 
     changeColourEvenRows() {
         if (this.options.alternateColour == false) return
-        var rows = this.tableHtml.rows
+        var rows = this.tableHtml.tBodies[0].rows; //todo move that in function or rows property 
+
         var cnt = 0
         for (let i = 0; i < rows.length; i++) {
             // only count visible rows
