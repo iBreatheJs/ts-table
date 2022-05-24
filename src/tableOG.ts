@@ -481,21 +481,33 @@ export class Table<Data extends TableData>{
         let autocomplete = false // dev, todo implement with option
 
 
-
         let cell = event.currentTarget as HTMLTableCellElement
         let row = cell.parentElement as HTMLTableRowElement
-
+        console.log("cell")
+        console.log(cell)
+        
         let cellIndex = cell.cellIndex
-
+        
         if (autocomplete) {
             let inputConf = {}
             let input = new InputNice(cell, inputConf)
         }
-
+        
         // when getting row index from table, substract header rows
         // todo: do that everywhere or keep as class property
         let theadRowCnt = this.tableHtml.tHead?.rows.length
+        
         let rowIndexData = row.rowIndex - (theadRowCnt ?? 0)
+        let rows = Array.from(this.tableHtml.tBodies[0].rows)
+        if (rows.includes(row)){
+            console.log("includes ")
+        }else{
+            
+            console.log("includes not")
+        }
+        console.log(theadRowCnt)
+        console.log("row.rowIndex")
+        console.log(row.rowIndex)
 
         var valNew = cell.innerHTML
 
@@ -713,16 +725,7 @@ export class Table<Data extends TableData>{
             if (keyOrIndex == "header") {
                 value = col
                 
-                cell.addEventListener('click', (event: Event) => {
-                    console.log("new cell click event")
-                    cell.innerHTML = ""
-                    // this.onEdit(event, keyOrIndex)
-                })
-                cell.addEventListener('blur', (event: Event) => {
-                    console.log("new cell blur event")
-                    if (cell.innerHTML == "") cell.innerHTML = value
-                    // this.onEdit(event, keyOrIndex)
-                })
+              
                 
             } else {
                 // @ts-ignore

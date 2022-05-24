@@ -4,11 +4,13 @@
     "@types/jest": "^27.4.1",
     "jest": "^27.5.1",
     "jest-expect-message": "^1.0.2",
-    "ts-jest": "^27.1.3"
+    "ts-jest": "^27.1.3",
+    "webpack": "^5.52.1",
+    "webpack-cli": "^4.8.0"
   },
   "scripts": {
     "test": "jest --env=jsdom",
-    "startDemo": "npx webpack --mode development --watch"
+    "start": "npx webpack --mode development --watch"
   },
   "jest": {
     "setupFilesAfterEnv": [
