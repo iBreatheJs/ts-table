@@ -2,6 +2,172 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "../src/container.ts":
+/*!***************************!*\
+  !*** ../src/container.ts ***!
+  \***************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "getOrCreateContainer": () => (/* binding */ getOrCreateContainer)
+/* harmony export */ });
+/* harmony import */ var _table__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./table */ "../src/table.ts");
+
+/**
+     *
+     * @param container
+     *      @type {HtmlTableElement} - use provided table
+     *      @type {string} - create table if no table, create table in div if div
+     *      @type {undefined} - create table, dev has to add to dom //todo
+     * @returns
+     *
+     * @description
+     *
+     * This methode gets, or if not existing, creates the container in which the table will be placed.
+     *
+     * todo desc
+     *
+     *
+     * assign HTMLTableElement to this.tableHtml or throw error
+     * Table is ether:
+     *      - passed to constructor (table)
+     *      - found in DOM (string)
+     *      - created (string, div, undefined, null)
+     *
+     * ID is:
+     *      - kept (arg: Table, string which is ID of Table found in DOM)
+     *      - assigned (string which is ID of div or new ID, div) - format: table_<string> eg. table_name
+     *          - div: use id of div and prefix with "table_"
+     *      - generated (undefined, null) - format: table_<number> eg. table_15 - num based on Tables instantiated
+     *
+     * ERROR:
+     *      invalid container type //todo consider error log but creating table
+     *
+     * todo consider always assigning an ID in case the passed element has none
+     */
+function getOrCreateContainer(container) {
+    var tableHtml;
+    let id;
+    // check DOM
+    let html = typeof container === "string" ?
+        document.getElementById(container) :
+        container;
+    // if NO container - create ONLY in memory and auto assign name as "table_<num>" 
+    /* if (!container) {
+        // get uniqe ID based on tables instantiated
+        let num = Table.tablesInstCnt
+        // in case it was created by sth other than this lib
+        while (document.getElementById("table_" + num)) {
+            num++
+        }
+        id = "table_" + num
+        console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id')
+    } */
+    // can only be string or HtmlElement (undefined -> string) // todo could be removed most likely
+    // if (typeof container !== "string" && !isHtmlElement(container)) {
+    //     throw new ReferenceError("Table cant be initialized with provided container.")
+    // }
+    if (!html) {
+        // get uniqe ID based on tables instantiated
+        let num = _table__WEBPACK_IMPORTED_MODULE_0__.Table.tablesInstCnt;
+        // in case it was created by sth other than this lib
+        while (document.getElementById("table_" + num)) {
+            num++;
+        }
+        id = "table-" + num;
+        if (!container) {
+            console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id');
+        }
+        // element not found, create it ONLY IN MEMORY:
+        let tableHtml = document.createElement("table");
+        tableHtml.classList.add("table-basic");
+        // let id = html.id ? html.id : String(Table.tablesInstCnt)
+        // todo id
+        tableHtml.setAttribute("id", id);
+        // html.appendChild(tableHtml)
+        return tableHtml;
+    }
+    else {
+        // element found, check tag
+        var tagName = html === null || html === void 0 ? void 0 : html.tagName;
+        if (tagName === "TABLE") {
+            return html;
+        }
+        else if (tagName === "DIV") {
+            let tableHtml = document.createElement("table");
+            tableHtml.classList.add("table-basic");
+            let id = html.id ? html.id : String(_table__WEBPACK_IMPORTED_MODULE_0__.Table.tablesInstCnt);
+            tableHtml.setAttribute("id", "table-" + id);
+            html.appendChild(tableHtml);
+            return tableHtml;
+        }
+        else {
+            throw new Error("Cant initialize Table with provided container, invalid Tag name");
+        }
+    }
+}
+
+
+/***/ }),
+
+/***/ "../src/table.ts":
+/*!***********************!*\
+  !*** ../src/table.ts ***!
+  \***********************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "Table": () => (/* binding */ Table)
+/* harmony export */ });
+/* harmony import */ var _container__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./container */ "../src/container.ts");
+
+class Table {
+    /**
+     *
+     * @param tableHtml
+     * @param header Key = name of associated data field, value = display name
+     * @param tableData
+     * @param options
+     */
+    constructor(params) {
+        var _a;
+        // this.tableHtml = params.container
+        this.tableHtml = (0,_container__WEBPACK_IMPORTED_MODULE_0__.getOrCreateContainer)((_a = params.container) !== null && _a !== void 0 ? _a : null);
+        this.header = params.header;
+        this.data = params.data;
+        this.options = params.options || {};
+        // {container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> = {}}
+        Table.tablesInstCnt++; // Number of Tables instantiated
+        Table.tablesActiveCnt++; // Number of currently existing Table Instances
+        console.log(this.tableHtml);
+        return;
+        registry.register(this, this.tableHtml);
+        this.header = header;
+        // this._data = data
+        this.data = data;
+        this.options = options;
+        this.tableStyle = (options === null || options === void 0 ? void 0 : options.tableStyle) || tableStyle;
+        this.initialized = false;
+        // this.rowCntHtml = this.options.rowCount != false ? (() => {
+        //     let rowCntHtml = document.createElement("div");
+        //     rowCntHtml.id = this.tableHtml.id + "_row-counter";
+        //     rowCntHtml.innerHTML = String(this.data.length)
+        //     return rowCntHtml
+        // })(): null
+        this.filterConfig = null;
+        this.rowCntHtml = null;
+        this.searchHtml = null;
+        // this.drawTable()
+    }
+}
+Table.tablesInstCnt = 0; // Number of Tables instantiated
+Table.tablesActiveCnt = 0; // Number of currently existing Table Instances
+
+
+/***/ }),
+
 /***/ "./src/data/tradesTest.js":
 /*!********************************!*\
   !*** ./src/data/tradesTest.js ***!
@@ -79,10 +245,20 @@ var __webpack_exports__ = {};
   !*** ./src/ts/index.ts ***!
   \*************************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _data_tradesTest__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../data/tradesTest */ "./src/data/tradesTest.js");
+/* harmony import */ var _src_table__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../../../src/table */ "../src/table.ts");
+/* harmony import */ var _data_tradesTest__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../data/tradesTest */ "./src/data/tradesTest.js");
+
 
 console.log("tstable test server started");
-console.log(_data_tradesTest__WEBPACK_IMPORTED_MODULE_0__["default"]);
+console.log(_data_tradesTest__WEBPACK_IMPORTED_MODULE_1__["default"]);
+let header = {};
+let container = document.createElement('table');
+let tParams = {
+    data: _data_tradesTest__WEBPACK_IMPORTED_MODULE_1__["default"],
+    header: header,
+    container: container
+};
+let table = new _src_table__WEBPACK_IMPORTED_MODULE_0__.Table({ container: container, data: _data_tradesTest__WEBPACK_IMPORTED_MODULE_1__["default"], header: header });
 
 })();
 
