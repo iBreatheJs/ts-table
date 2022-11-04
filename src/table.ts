@@ -8,9 +8,12 @@ import {
 import { getOrCreateContainer } from './container'
 
 interface TableConstructor<Data extends TableData> {
-    new(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> ) : Table<Data>
-
+    new(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data>): Table<Data>
 }
+
+// interface TableConstructor<Data extends TableData> {
+//     new ( container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> ): Table<Data> | (new (asdf:string):any) 
+// }
 export class Table<Data extends TableData>{
     static tablesInstCnt: number = 0 // Number of Tables instantiated
     static tablesActiveCnt: number = 0 // Number of currently existing Table Instances
@@ -38,9 +41,11 @@ export class Table<Data extends TableData>{
      */
 
     //  constructor(container: TableContainer, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
+    constructor(params: TableParams<Data>)
+    constructor(container: TableContainer, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
 
-    constructor(params: TableParams<Data>){
-    // constructor(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> = {}) {
+        // constructor(params: TableParams<Data>){
+        // constructor(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> = {}) {
         // this.tableHtml = params.container
         this.tableHtml = getOrCreateContainer(params.container ?? null)
         this.header = params.header || header

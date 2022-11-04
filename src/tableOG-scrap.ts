@@ -67,40 +67,14 @@ function isHtmlElement(test: any): test is HTMLElement {
 }
 
 
-
-// TODO: ?make RowFunc more generic and use for all callbacks, htmlElement, data, table ref
-// TODO make tableData private bzw. test what happens when accessed thru table param / ?table param improvement or unncessary
-export interface RowFunc<Data extends TableData> {
-    (
-        rowHtml: HTMLTableRowElement,
-        keyOrIndex: KeyOrIndex<Data>,
-        tableData: ROData<Data>,
-        table: Table<Data>, //TODO: figure out data type here
-    ): void
+interface DictRO<T> {
+    readonly [id: string]: T;
 }
 
+type ColType<Data, T> = Data;
 
-/**
- * function that can be passed to Table as option 'collapsible'
- * to manipulate innerHtml of row that expends onClick 
- */
-export interface CollapsibleRowFunc<Data extends TableData> {
-    (
-        cellHtml: HTMLTableCellElement,
-        keyOrIndex: KeyOrIndex<Data>,
-        tableData: ROData<Data>,
-    ): void
-}
 
-export interface OnEditFunc {
-    (
-        row: HTMLTableRowElement,
-        cell: HTMLTableCellElement,
-        tableData: TableData, //todo
-    ): void
-}
 
-export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefined | null
 
 // ASK: can i configure private interfaces for the class
 // that reference tableData without the need to always n everywherer pass the generic type
@@ -111,12 +85,12 @@ export class Table<Data extends TableData>{
     static tablesActiveCnt: number = 0 // Number of currently existing Table Instances
 
     public tableHtml: HTMLTableElement;
-    // private header: Dictionary<string>; // what shoudl be private?? todo
-    public header: Dictionary<string>;
+    // private header: Dict<string>; // what shoudl be private?? todo
+    public header: Dict<string>;
     readonly tableData: Data;
     // private _tableData: Data;
     public options: TableOptions<Data>;
-    private tableStyle: Dictionary<Dictionary<string>>;
+    private tableStyle: Dict<Dict<string>>;
     private filterConfig: FilterConfig | null
     public initialized: boolean;
 
@@ -131,7 +105,7 @@ export class Table<Data extends TableData>{
      * @param tableData 
      * @param options 
      */
-    constructor(container: TableContainer, header: Dictionary<string>, tableData: Data, options: TableOptions<Data> = {}) {
+    constructor(container: TableContainer, header: Dict<string>, tableData: Data, options: TableOptions<Data> = {}) {
         Table.tablesInstCnt++; // Number of Tables instantiated
         Table.tablesActiveCnt++; // Number of currently existing Table Instances
 
@@ -168,108 +142,7 @@ export class Table<Data extends TableData>{
     }
 
 
-    /**
-     * 
-     * @param container  
-     *      @type {HtmlTableElement} - use provided table
-     *      @type {string} - create table if no table, create table in div if div
-     *      @type {undefined} - create table, dev has to add to dom //todo
-     * @returns 
-     * 
-     * @description
-     * assign HTMLTableElement to this.tableHtml or throw error
-     * Table is ether:
-     *      - passed to constructor (table)
-     *      - found in DOM (string)
-     *      - created (string, div, undefined, null)
-     * 
-     * ID is:
-     *      - kept (arg: Table, string which is ID of Table found in DOM)
-     *      - assigned (string which is ID of div or new ID, div) - format: table_<string> eg. table_name
-     *          - div: use id of div and prefix with "table_"
-     *      - generated (undefined, null) - format: table_<number> eg. table_15 - num based on Tables instantiated
-     * 
-     * ERROR: 
-     *      invalid container type //todo consider error log but creating table
-     *      
-     * todo consider always assigning an ID in case the passed element has none 
-     */
-    getOrCreateTableHtml(container: TableContainer) {
 
-        var tableHtml: HTMLTableElement
-        let id;
-
-        // check DOM
-        let html = typeof container === "string" ?
-            document.getElementById(container) :
-            container
-
-
-        // if NO container - create ONLY in memory and auto assign name as "table_<num>" 
-        /* if (!container) {
-            // get uniqe ID based on tables instantiated
-            let num = Table.tablesInstCnt
-            // in case it was created by sth other than this lib
-            while (document.getElementById("table_" + num)) {
-                num++
-            }
-            id = "table_" + num
-            console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id')
-        } */
-
-        // can only be string or HtmlElement (undefined -> string) // todo could be removed most likely
-        // if (typeof container !== "string" && !isHtmlElement(container)) {
-        //     throw new ReferenceError("Table cant be initialized with provided container.")
-        // }
-
-
-
-        if (!html) {
-            // get uniqe ID based on tables instantiated
-            let num = Table.tablesInstCnt
-            // in case it was created by sth other than this lib
-            while (document.getElementById("table_" + num)) {
-                num++
-            }
-            id = "table-" + num
-
-            if (!container) {
-                console.warn('created Table WITHOUT CONTAINER as "' + container + '", needs to be added to DOM manually or instantiate with valid id')
-            }
-
-
-
-            // element not found, create it ONLY IN MEMORY:
-            let tableHtml = document.createElement("table");
-            tableHtml.classList.add("table-basic")
-
-            // let id = html.id ? html.id : String(Table.tablesInstCnt)
-            // todo id
-            tableHtml.setAttribute("id", id)
-            // html.appendChild(tableHtml)
-
-            return tableHtml as HTMLTableElement
-
-        } else {
-            // element found, check tag
-            var tagName = html?.tagName
-            if (tagName === "TABLE") {
-                return html as HTMLTableElement
-            }
-            else if (tagName === "DIV") {
-                let tableHtml = document.createElement("table");
-                tableHtml.classList.add("table-basic")
-                let id = html.id ? html.id : String(Table.tablesInstCnt)
-                tableHtml.setAttribute("id", "table-" + id)
-                html.appendChild(tableHtml)
-
-                return tableHtml as HTMLTableElement
-            }
-            else {
-                throw new Error("Cant initialize Table with provided container, invalid Tag name")
-            }
-        }
-    }
 
     getDataByIndex(row: number, col: number) {
 
@@ -411,24 +284,24 @@ export class Table<Data extends TableData>{
         let row = cell.parentElement as HTMLTableRowElement
         console.log("cell")
         console.log(cell)
-        
+
         let cellIndex = cell.cellIndex
-        
+
         if (autocomplete) {
             let inputConf = {}
             let input = new InputNice(cell, inputConf)
         }
-        
+
         // when getting row index from table, substract header rows
         // todo: do that everywhere or keep as class property
         let theadRowCnt = this.tableHtml.tHead?.rows.length
-        
+
         let rowIndexData = row.rowIndex - (theadRowCnt ?? 0)
         let rows = Array.from(this.tableHtml.tBodies[0].rows)
-        if (rows.includes(row)){
+        if (rows.includes(row)) {
             console.log("includes ")
-        }else{
-            
+        } else {
+
             console.log("includes not")
         }
         console.log(theadRowCnt)
@@ -560,7 +433,7 @@ export class Table<Data extends TableData>{
             btn.textContent = "fltr"
             searchCell.append(btn)
         }
-        
+
         if (this.options.showRules) {
             let rulesRow = thead.insertRow();
             let btn = document.createElement("button");
@@ -629,7 +502,7 @@ export class Table<Data extends TableData>{
         // TODO: when is this used? while buildigng sdlfjs;fdl
         this.initialized = true
         this.changeColourEvenRows()
-        
+
         console.timeEnd("drawTable")
     }
 
@@ -650,9 +523,9 @@ export class Table<Data extends TableData>{
 
             if (keyOrIndex == "header") {
                 value = col
-                
-              
-                
+
+
+
             } else {
                 // @ts-ignore
                 // for-in and Object.Keys return elements as string, 
