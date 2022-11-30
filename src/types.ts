@@ -13,10 +13,10 @@ export type TableData = RowData[] | Dict<RowData>;
 
 
 
-export interface TableParams<Data extends TableData>{
-    container: TableContainer, 
-    header: Dict<string>, 
-    data: Data, 
+export interface TableParams<Data extends TableData> {
+    container: TableContainer,
+    header?: Dict<string>,
+    data: Data,
     options?: TableOptions<Data> | {}
 }
 
@@ -113,3 +113,5 @@ export interface OnEditFunc {
 }
 
 export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefined | null
+
+export type TableHeader = Dict<string>
