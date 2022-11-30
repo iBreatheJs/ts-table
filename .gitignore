@@ -1,3 +1,4 @@
 node_modules
 package-lock.json
 demo/src/server/__pycache__
+demo/src/data/tradesTest.js
