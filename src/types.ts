@@ -1,3 +1,4 @@
+import { Table } from "./table";
 
 // basic dictionary type:
 export interface Dict<TValue> {
@@ -8,6 +9,22 @@ export interface Dict<TValue> {
 export type RowData = Dict<number | string | boolean>
 
 export type TableData = RowData[] | Dict<RowData>;
+
+
+
+let data: TableData = [
+    { col1: "val1" },
+    { col2: "val2" }
+]
+let data2: TableData = {
+    asfd: { col1: "val1" },
+    asdf2: { col2: "val2" }
+}
+
+let data3 = [
+    ["r1col1", "r1col2"],
+    ["r2col1", "r2col2"]
+]
 
 
 
@@ -43,9 +60,10 @@ export interface TableOptions1<Data extends TableData> {
     // edit?: edit
     tableStyle?: Dict<Dict<string>>,
     alternateColour?: boolean //default true
-    transformData?: RowFunc<Data>,
-    rowFunc?: RowFunc<Data>,
-    collapsible?: CollapsibleRowFunc<Data>,
+    // todo: these fk up the call method used for passing this context
+    // transformData?: RowFunc<Data>,
+    // rowFunc?: RowFunc<Data>,
+    // collapsible?: CollapsibleRowFunc<Data>,
     sortable?: { // TODO: add 3rd value to header that is used for sorting, eg. for time: display simple date format but calc with unix time stamp
         all: boolean,
         cols?: [string]
@@ -114,4 +132,20 @@ export interface OnEditFunc {
 
 export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefined | null
 
-export type TableHeader = Dict<string>
+/**
+ * 1. default or empty {}
+ * 
+ *      auto detect based on data provided
+ * 
+ * 2. Object where:
+ * 
+ *      keys - relate to the data field
+ * 
+ *      values - display name
+ * 
+ * 3. false: no header
+ */
+export type TableHeader = Dict<string> | false
+
+let header = { col1: "col1", col2: "col2" }
+let header2 = ["col1", "col2"]

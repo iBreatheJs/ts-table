@@ -1,4 +1,8 @@
 node_modules
 package-lock.json
 demo/src/server/__pycache__
+demo/src/server/venv
+demo/src/server/static/bundle.js
 demo/src/data/tradesTest.js
+demo/src/server/static/bundle.js.map
+demo/src/server/static/bundle.js
