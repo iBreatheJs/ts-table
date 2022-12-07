@@ -10,7 +10,7 @@
   },
   "scripts": {
     "test": "jest --env=jsdom",
-    "start": "npx webpack --mode development --watch"
+    "dev": "npx webpack --mode development --watch"
   },
   "jest": {
     "setupFilesAfterEnv": [

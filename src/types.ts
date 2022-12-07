@@ -6,7 +6,12 @@ export interface Dict<TValue> {
 }
 
 // TODO: implement checkbox etc. for bool
-export type RowData = Dict<number | string | boolean>
+export type ColData = number | string | boolean
+export type RowData = Dict<ColData>
+// obj format is nice because no order and empty fields
+// export type RowData2 = Data2[]
+// let data22 = [1,"dsdf", true]
+
 
 export type TableData = RowData[] | Dict<RowData>;
 
@@ -83,6 +88,7 @@ export interface TableOptions1<Data extends TableData> {
     showRules?: boolean
     // editable?: OnEditFunc | true | false
     // extendableRows?: asdf
+    userConfig?: Dict<Dict<string>>
 }
 
 export type TableOptions<Data extends TableData> = TableOptions1<Data> & EditOptions
@@ -145,7 +151,23 @@ export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefi
  * 
  * 3. false: no header
  */
-export type TableHeader = Dict<string> | false
+export type TableHeader = Dict<string>
 
 let header = { col1: "col1", col2: "col2" }
+let headerMulti = {
+    col1: {
+        col1sub: "col1sub1", col1sub2: "col1sub2"
+    },
+    col2: "col2"
+}
+let headerMultiArr = [
+    {
+        "col1": {
+            col1sub: "col1sub1", col1sub2: "col1sub2"
+        }
+    },
+    ["col2", "col2"],
+    "col3"
+]
 let header2 = ["col1", "col2"]
+let header3 = [["col1", "col1"], { col2: "col1" }]

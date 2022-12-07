@@ -1,23 +1,24 @@
 import { Table } from "./table";
-import { RowData, TableContainer, TableData } from "./types";
+import { ColData, RowData, TableContainer, TableData } from "./types";
 
-export function drawTable<Data extends TableData>(this: Table<Data>) {
+export function drawTable<Data extends TableData>(table: Table<Data>) {
     console.time("drawTable")
     console.log("draw table");
-    console.log(this.data);
+    console.log(table.data);
 
 
 
     // checks
-    let container = drawTableChecks(this.container, this.data, this)
+    // todo/assertion
+    let container = drawTableChecks(table.container, table.data, table) as HTMLTableElement
 
 
     // HEADER
-    if (this.header) drawTableHeader.call(this)
+    if (table.header) drawTableHeader(table)
 
     // draw
     todo: // narrow container to htmltableelement
-    drawTableBody.call(this, container)
+    drawTableBody(table, container)
 
 }
 function drawTableChecks<Data extends TableData>(container: TableContainer, data: Data, table: Table<Data>) {
@@ -86,85 +87,94 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
 
 
 // let drawTableDraw = <Data extends TableData>() => {
-function drawTableBody<Data extends TableData>(this: Table<Data>, container: HTMLTableElement,) {
+function drawTableBody<Data extends TableData>(table: Table<Data>, container: HTMLTableElement) {
     console.log("drawtabledrawdwwww");
 
 
     // TABLE
 
     // check data structure
-    var dataIsArray = Array.isArray(this.data)
-    // array verson:
-    if (dataIsArray) {
-        let tbody = container.createTBody();
-
-        // TODO: check this here y did i not put it in the function??
-        // for in returns key (and also Array index) as string
-        for (let row in this.data) {
-            this.addRow(tbody, row)
-        }
-
-        // add row
-        if (this.options?.extendableRows) {
-            let tbody = container.createTBody();
-            this.addRow(tbody, "header")
-        }
-        // filter box for this table
-        if (filterRow) {
-            this.addFilterBox(filterRow)
-        }
-        // TODO: when is this used? while buildigng sdlfjs;fdl
-        this.initialized = true
-        this.changeColourEvenRows()
+    if (!Array.isArray(table.data)) {
+        throw new Error("todo: for now only use array and transform array, reevaluate if it makes sense to deal w other data structures")
     }
+    var dataIsArray = Array.isArray(table.data)
+    // array verson:
+    // let tbody = container.createTBody();
+
+    // // TODO: check this here y did i not put it in the function??
+    // // for in returns key (and also Array index) as string
+    // for (let row in this.data) {
+    //     this.addRow(tbody, row)
+    // }
+
+    // // add row
+    // if (this.options?.extendableRows) {
+    //     let tbody = container.createTBody();
+    //     this.addRow(tbody, "header")
+    // }
+    // // filter box for this table
+    // if (filterRow) {
+    //     this.addFilterBox(filterRow)
+    // }
+    // // TODO: when is this used? while buildigng sdlfjs;fdl
+    // this.initialized = true
+    // this.changeColourEvenRows()
+
+
 
     var keyOrIndex: number | string
-    // var keyOrIndex: KeyOrIndex<Data>
-
-    // if(Array.isArray(this.tableData)) keyOrIndex = 7
 
     let tbody = container.createTBody();
+    table.container = table.container as HTMLTableElement
+    table.container.appendChild(tbody)
 
-    // TODO: check this here y did i not put it in the function??
-    // for in returns key (and also Array index) as string
-    for (keyOrIndex in this.data) {
 
-        // convert string to number for tsc - only necessary when checking for types when indexing data (arr/dict)
-        // tried a million years and approches but there is not satisfying way to make ts understand it, it seems
-        // TODO document in md
-        if (isArray(this.data)) keyOrIndex = +keyOrIndex; //!!!!
-
-        this.addRow(tbody, keyOrIndex)
+    for (let row of table.data) {
+        table.addRow(table, row)
     }
 
-    // add row
-    if (this.options.extendableRows) {
-        let tbody = container.createTBody();
-        this.addRow(tbody, "header")
-    }
-    // filter box for this table
-    if (filterRow) {
-        this.addFilterBox(filterRow)
-    }
-    // TODO: when is this used? while buildigng sdlfjs;fdl
-    this.initialized = true
-    this.changeColourEvenRows()
+    // // TODO: check this here y did i not put it in the function??
+    // // for in returns key (and also Array index) as string
+    // for (let row in this.data) {
+
+    //     // convert string to number for tsc - only necessary when checking for types when indexing data (arr/dict)
+    //     // tried a million years and approches but there is not satisfying way to make ts understand it, it seems
+    //     // TODO document in md
+    //     // if (isArray(this.data)) keyOrIndex = +keyOrIndex; //!!!!
+
+    //     this.addRow(this, row)
+    // }
+
+    // // add row
+    // if (this.options.extendableRows) {
+    //     let tbody = container.createTBody();
+    //     this.addRow(tbody, "header")
+    // }
+    // // filter box for this table
+    // if (filterRow) {
+    //     this.addFilterBox(filterRow)
+    // }
+    // // TODO: when is this used? while buildigng sdlfjs;fdl
+    // this.initialized = true
+    // this.changeColourEvenRows()
 
     console.timeEnd("drawTable")
+
 }
 
-function drawTableHeader<Data extends TableData>(this: Table<Data>) {
+function drawTableHeader<Data extends TableData>(table: Table<Data>) {
     // HEADER
     // console.log(this.container)
 
     // todo make sure container is a htmltableelement
-    let container = this.container as HTMLTableElement
+    let container = table.container as HTMLTableElement
+    container.classList.add("tableBasic")
     let thead = container.createTHead();
 
     // // insert searchbar in header if option is checked
     let searchRow = thead.insertRow();
     let searchCell = document.createElement("td");
-    searchCell.setAttribute("colspan", String(Object.keys(this.header).length))
+    searchCell.setAttribute("colspan", String(Object.keys(table.header).length))
     searchRow.append(searchCell)
 
 
@@ -224,32 +234,39 @@ function drawTableHeader<Data extends TableData>(this: Table<Data>) {
     //     rulesRow.innerHTML = "rulez"
     // }
 
-    // let rowHeader = thead.insertRow();
-    // var colNr = 0;
-    // for (let key in this.header) {
-    //     let nr = colNr
-    //     let th = document.createElement("th");
-    //     // Object.assign(th.style, tableStyle.th);
-    //     // th.style.cssText = " border: 1px solid #ddd;"
+    // todo: auto header based on data
+
+    let rowHeader = thead.insertRow();
+    var colNr = 0;
+    for (let key in table.header) {
+        let nr = colNr
+        let th = document.createElement("th");
+        // Object.assign(th.style, tableStyle.th);
+        // th.style.cssText = " border: 1px solid #ddd;"
 
 
-    //     // if sortable
-    //     if (this.options.sortable?.all) {
-    //         th.addEventListener('click', () => { this.sortTable(nr), this.changeColourEvenRows() }, false);
+        // if sortable
+        // if (this.options.sortable?.all) {
+        //     th.addEventListener('click', () => { this.sortTable(nr), this.changeColourEvenRows() }, false);
 
-    //         // TODO: implement for specific cols only / possibility to disable some
-    //     }
-    //     let text = document.createTextNode(this.header[key]);
-    //     th.appendChild(text);
-    //     rowHeader.appendChild(th);
-    //     colNr++
-    // }
+        //     // TODO: implement for specific cols only / possibility to disable some
+        // }
+        let text = document.createTextNode(table.header[key]);
+        th.appendChild(text);
+        rowHeader.appendChild(th);
+        colNr++
+    }
 
 
 }
 
-export function addRow<Data extends TableData>(table: Table<Data>, tbody: HTMLTableSectionElement, keyOrIndex: string | number | "header") {
+// export function addRow<Data extends TableData>(table: Table<Data>, keyOrIndex: string | number | "header") {
+export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowData) {
+    console.log("add row");
+
     let row = document.createElement("tr");
+    let tableHtml = table.container as HTMLTableElement
+    let tbody = tableHtml.tBodies[0]
 
     // transform row data, called for each row TODO: that good here or call once and set all
     //todo
@@ -263,25 +280,27 @@ export function addRow<Data extends TableData>(table: Table<Data>, tbody: HTMLTa
     if (!table.header) {
         const uniqueKeys = [...new Set(table.data.map((item: RowData) => Object.keys(item)))]; // [ 'A', 'B']
     }
+
     for (const col in table.header) {
 
-        let value: string;
+        let value: ColData;
         let cell = document.createElement("td");
 
-        if (keyOrIndex == "header") {
-            value = col
+        // if (keyOrIndex == "header") {
+        //     value = col
 
 
 
-        } else {
-            // @ts-ignore
-            // for-in and Object.Keys return elements as string, 
-            // if Array its certenly a number; if Dict its definitely a string
-            // nice and easy js solution:
-            // 
-            // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
-            value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
-        }
+        // } else {
+        //     // @ts-ignore
+        //     // for-in and Object.Keys return elements as string, 
+        //     // if Array its certenly a number; if Dict its definitely a string
+        //     // nice and easy js solution:
+        //     // 
+        //     // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
+        //     // value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
+        // }
+        value = rowData[col];
 
 
         // TODO: Test performance difference with concated string 
@@ -313,30 +332,30 @@ export function addRow<Data extends TableData>(table: Table<Data>, tbody: HTMLTa
     // this.tableHtml.tBodies[0].appendChild(row)
 
     // function to manipulate row from outside, after it is rendered!
-    if (this.options.rowFunc) {
-        this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
-    }
-    // collapsible Row:
-    if (this.options.collapsible) {
+    // if (this.options.rowFunc) {
+    //     this.options.rowFunc(row, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>, this)
+    // }
+    // // collapsible Row:
+    // if (this.options.collapsible) {
 
-        let rowHidden = this.tableHtml.insertRow();
-        let cell = rowHidden.insertCell();
-        cell.colSpan = Object.keys(this.header).length;
-        cell.style.display = "none";
+    //     let rowHidden = this.tableHtml.insertRow();
+    //     let cell = rowHidden.insertCell();
+    //     cell.colSpan = Object.keys(this.header).length;
+    //     cell.style.display = "none";
 
-        // call callback function to fill the hidden cell
-        this.options.collapsible(cell, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>)
+    //     // call callback function to fill the hidden cell
+    //     this.options.collapsible(cell, keyOrIndex as KeyOrIndex<Data>, this.tableData as unknown as ROData<Data>)
 
-        if (row) {
-            row.onclick = () => {
-                // toggle visibility
-                if (cell.style.display === "none") {
-                    cell.style.removeProperty('display');
-                } else {
-                    cell.style.display = "none";
-                }
+    //     if (row) {
+    //         row.onclick = () => {
+    //             // toggle visibility
+    //             if (cell.style.display === "none") {
+    //                 cell.style.removeProperty('display');
+    //             } else {
+    //                 cell.style.display = "none";
+    //             }
 
-            }
-        }
-    }
+    //         }
+    //     }
+    // }
 }

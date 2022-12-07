@@ -4,7 +4,8 @@ import {
     TableParams,
     TableContainer,
     TableOptions,
-    TableHeader
+    TableHeader,
+    RowData
 } from './types'
 
 import { addRow, drawTable } from './draw'
@@ -69,7 +70,6 @@ export class Table<Data extends TableData>{
     // private searchHtml: HTMLInputElement | null;
     // private rowCntHtml: HTMLDivElement | null;
 
-
     /**
      * obj
      * @callback objArg
@@ -80,36 +80,37 @@ export class Table<Data extends TableData>{
      * @callback multiArg
      * @param container 
      * @param header Key = name of associated data field, value = display name
-     * @param data 
+     * @param data required, for empty table explicitly declare as {} or []
      * @param options 
      */
 
-    /**
-     * @type {objArg & multiArg}
-     */
+
     constructor(params: TableParams<Data>);
     constructor(container: TableContainer, data: Data, header?: TableHeader, options?: TableOptions<Data>);
     constructor(containerOrParams: TableContainer | TableParams<Data>, data: Data | boolean = false, header?: TableHeader, options?: TableOptions<Data>) {
         // init with obj of params - first arg is params
-        if (isParams(containerOrParams)) {
+        let asdf = { a: containerOrParams, b: data }
+
+        // Only checks for obj type with manditory data property. 
+        // Not boolean is asserted in else... constructor overloads enforce it but ts cant infer that unfortunatelly.
+        if (this.argIsObject(containerOrParams)) {
             let params = containerOrParams
 
             this.container = params.container
-            this.data = params.data || []
+            this.data = params.data
             this.header = params.header ?? {}
             this.options = params.options || null
         } else { // init with multiple params -  first arg is container
+            // assert because based on constructors and argIsObject type guard there is no ambiguity
+            containerOrParams = containerOrParams as TableContainer
+            data = data as Data
+            // todo: might do some runtime data validation tho
+            // no data and no header cant work todo
+
             this.container = containerOrParams
+            this.data = data;
             this.header = header ?? {}
             this.options = options || null
-            if (typeof data != 'boolean') {
-                this.data = data || []
-            } else {
-                // that actually NEVER happens, only way data is boolean is if the constructor with params is called (case is handled above) or boolean is passed against the will of ts
-                // no data, init as empty data
-
-                this.data = [{}] as Data
-            }
         }
 
 
@@ -121,11 +122,6 @@ export class Table<Data extends TableData>{
 
 
 
-        // this.container = params.container
-        // this.container = getOrCreateContainer(params.container ?? null)
-        // this.header = params.header || header
-        // this.data = params.data
-        // this.options = params?.options || {}
 
         // {container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> = {}}
         Table.tablesInstCnt++; // Number of Tables instantiated
@@ -157,8 +153,14 @@ export class Table<Data extends TableData>{
         // // this.drawTable()
 
 
-        let test
-        test = this.transformData([{}] as Data) || test
+    }
+
+    // want that:
+    // https://github.com/microsoft/TypeScript/issues/26916
+    // argIsObject2<Data extends TableData>(): this is {containerOrParams: TableParams<Data>} & {data: Data} {
+    // argIsObject2<Data extends TableData>(asdf: any): asdf is object & { containerOrParam: string, data: number } {
+    argIsObject<Data extends TableData>(containerOrParams: any): containerOrParams is TableParams<Data> {
+        return containerOrParams && containerOrParams.data ? true : false;
     }
 
 
@@ -182,8 +184,8 @@ export class Table<Data extends TableData>{
         return false
     }
 
-    // draw = () => drawTable.call(this)
-    // addRow = ()=> addRow()
+    draw = (): void => drawTable(this)
+    addRow = (table: Table<Data>, row: RowData) => addRow(table, row)
 
 }
 
@@ -200,5 +202,3 @@ let container = document.createElement("div")
 // }
 // let test = new Table(container, data)
 // let test2 = new Table({ container, data })
-
-
