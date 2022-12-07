@@ -1,7 +1,7 @@
 import { Table } from '../../../src/table'
 import { TableData, TableOptions, TableParams } from '../../../src/types'
 import cryptoData from '../data/tradesTest'
-import { events_custom } from '../../../src/events'
+import { events_custom, events_default } from '../../../src/events'
 console.log("tstable test server started")
 console.log(cryptoData)
 
@@ -22,7 +22,7 @@ let dataSimple = [
 ]
 let emptyD = {}
 let h = { col1: "col1", col2: "coll2" }
-let opt: TableOptions<typeof dataSimple> = { userConfig: events_custom }
+let opt: TableOptions<typeof dataSimple> = { eventConfig: events_custom }
 // let table = new Table({ data: cryptoData, container: container })
 let table = new Table(container, dataSimple, h, opt)
 // table.data = cryptoData

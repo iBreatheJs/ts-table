@@ -88,7 +88,7 @@ export interface TableOptions1<Data extends TableData> {
     showRules?: boolean
     // editable?: OnEditFunc | true | false
     // extendableRows?: asdf
-    userConfig?: Dict<Dict<string>>
+    eventConfig?: Dict<Dict<string>>
 }
 
 export type TableOptions<Data extends TableData> = TableOptions1<Data> & EditOptions

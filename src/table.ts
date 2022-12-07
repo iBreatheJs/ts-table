@@ -13,6 +13,7 @@ import { addRow, drawTable } from './draw'
 import { Logger } from './ts-logger/logger'
 import { getOrCreateContainer } from './container'
 import { table } from 'console';
+import { events_custom } from './events';
 
 interface TableConstructor<Data extends TableData> {
     new(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data>): Table<Data>
@@ -22,6 +23,7 @@ function isParams<Data extends TableData>(obj: any): obj is TableParams<Data> {
     return (obj && obj.container);
 }
 
+type TableActions = "sort" | "add-row"
 
 
 // interface TableConstructor<Data extends TableData> {
@@ -69,6 +71,9 @@ export class Table<Data extends TableData>{
 
     // private searchHtml: HTMLInputElement | null;
     // private rowCntHtml: HTMLDivElement | null;
+    public eventConfig: Dict<Dict<string>>
+    public actions;
+
 
     /**
      * obj
@@ -112,13 +117,24 @@ export class Table<Data extends TableData>{
             this.header = header ?? {}
             this.options = options || null
         }
+        this.eventConfig = this.options?.eventConfig || events_custom
 
 
 
         // const uniqueKeys = [...new Set(asdf.map((item) => Object.keys(item)))]; // [ 'A', 'B']
         // console.log(uniqueKeys);
+        let arg: asdf
+        this.actions = {
+            "add-row": this.addRow,
+            "sort": {
+                // arg: this.getArg("sort"),
+                fn: this.sort
+            }
+        } as const
 
+        type Actions = keyof typeof this.actions;
 
+        type asdf = Parameters<typeof this.sort>
 
 
 
@@ -155,6 +171,13 @@ export class Table<Data extends TableData>{
 
     }
 
+    // //todo tableactions infer somehow
+    // getArg(key: TableActions) {
+    //     this.actions[key]
+
+    // }
+
+
     // want that:
     // https://github.com/microsoft/TypeScript/issues/26916
     // argIsObject2<Data extends TableData>(): this is {containerOrParams: TableParams<Data>} & {data: Data} {
@@ -186,6 +209,12 @@ export class Table<Data extends TableData>{
 
     draw = (): void => drawTable(this)
     addRow = (table: Table<Data>, row: RowData) => addRow(table, row)
+    sort = (event: Event, n: number) => {
+        console.error("not implemented")
+        console.log(event);
+        console.log(n);
+
+    }
 
 }
 

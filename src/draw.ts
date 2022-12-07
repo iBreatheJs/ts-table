@@ -1,3 +1,4 @@
+import { addEvents } from "./events";
 import { Table } from "./table";
 import { ColData, RowData, TableContainer, TableData } from "./types";
 
@@ -244,6 +245,7 @@ function drawTableHeader<Data extends TableData>(table: Table<Data>) {
         // Object.assign(th.style, tableStyle.th);
         // th.style.cssText = " border: 1px solid #ddd;"
 
+        addEvents(table, th, table.eventConfig)
 
         // if sortable
         // if (this.options.sortable?.all) {
