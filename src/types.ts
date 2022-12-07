@@ -1,3 +1,4 @@
+import { addEvents } from "./events";
 import { Table } from "./table";
 
 // basic dictionary type:
@@ -31,7 +32,40 @@ let data3 = [
     ["r2col1", "r2col2"]
 ]
 
+// init this table so i can access the method types:
+let container = "" as unknown as HTMLTableElement
+let table = new Table(container, [])
+export type SortSig = Parameters<typeof table.sort>
+export type AddEventSig = Parameters<typeof addEvents>
 
+export type SetArgsT = (...args: AddEventSig) => SortSig
+
+// improve: type could depend on key
+export type EventConfig = Dict<Dict<EventConfigEntry>>
+
+
+// export type Actions = Dict<Dict<Action>>
+// export type Actions = Dict<Action>
+type EventT = "click" | "scroll"
+
+export type ActionConfig = Dict<ActionConfigEntry>
+// export type ActionConfig = {[id in ] Dict<ActionConfigEntry>}
+interface ActionConfigEntry {
+    args?: SetArgsT
+    fn: Function
+}
+// export interface Action {
+//     args?: SetArgsT
+//     fn: Function
+// }
+
+// probably better to force type 
+type Actions = keyof typeof table.actions; // list of literals used to address the action
+
+interface EventConfigEntry {
+    args?: SetArgsT,
+    action: Actions
+}
 
 
 
@@ -88,7 +122,7 @@ export interface TableOptions1<Data extends TableData> {
     showRules?: boolean
     // editable?: OnEditFunc | true | false
     // extendableRows?: asdf
-    eventConfig?: Dict<Dict<string>>
+    eventConfig?: EventConfig
 }
 
 export type TableOptions<Data extends TableData> = TableOptions1<Data> & EditOptions

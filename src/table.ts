@@ -5,7 +5,10 @@ import {
     TableContainer,
     TableOptions,
     TableHeader,
-    RowData
+    RowData,
+    EventConfig,
+    Actions,
+    ActionConfig
 } from './types'
 
 import { addRow, drawTable } from './draw'
@@ -23,7 +26,6 @@ function isParams<Data extends TableData>(obj: any): obj is TableParams<Data> {
     return (obj && obj.container);
 }
 
-type TableActions = "sort" | "add-row"
 
 
 // interface TableConstructor<Data extends TableData> {
@@ -71,7 +73,7 @@ export class Table<Data extends TableData>{
 
     // private searchHtml: HTMLInputElement | null;
     // private rowCntHtml: HTMLDivElement | null;
-    public eventConfig: Dict<Dict<string>>
+    public eventConfig: EventConfig
     public actions;
 
 
@@ -123,18 +125,21 @@ export class Table<Data extends TableData>{
 
         // const uniqueKeys = [...new Set(asdf.map((item) => Object.keys(item)))]; // [ 'A', 'B']
         // console.log(uniqueKeys);
-        let arg: asdf
         this.actions = {
-            "add-row": this.addRow,
+            "add-row": {
+                //maybe no need for args her...
+                // args: this.eventConfig.setArgs,
+                fn: this.addRow
+            },
             "sort": {
+                // args: this.eventConfig.setArgs,
                 // arg: this.getArg("sort"),
                 fn: this.sort
             }
-        } as const
+        }
 
-        type Actions = keyof typeof this.actions;
 
-        type asdf = Parameters<typeof this.sort>
+
 
 
 
@@ -171,11 +176,6 @@ export class Table<Data extends TableData>{
 
     }
 
-    // //todo tableactions infer somehow
-    // getArg(key: TableActions) {
-    //     this.actions[key]
-
-    // }
 
 
     // want that:

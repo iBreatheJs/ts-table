@@ -245,7 +245,11 @@ function drawTableHeader<Data extends TableData>(table: Table<Data>) {
         // Object.assign(th.style, tableStyle.th);
         // th.style.cssText = " border: 1px solid #ddd;"
 
-        addEvents(table, th, table.eventConfig)
+        let test = table.eventConfig
+        console.log("test");
+        console.log(test);
+
+        addEvents(table, th, table.eventConfig?.header)
 
         // if sortable
         // if (this.options.sortable?.all) {

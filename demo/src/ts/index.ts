@@ -1,7 +1,7 @@
 import { Table } from '../../../src/table'
-import { TableData, TableOptions, TableParams } from '../../../src/types'
+import { AddEventSig, Dict, EventConfig, SetArgsT, SortSig, TableData, TableOptions, TableParams } from '../../../src/types'
 import cryptoData from '../data/tradesTest'
-import { events_custom, events_default } from '../../../src/events'
+import { addEvents, events_custom, events_default } from '../../../src/events'
 console.log("tstable test server started")
 console.log(cryptoData)
 
@@ -22,9 +22,39 @@ let dataSimple = [
 ]
 let emptyD = {}
 let h = { col1: "col1", col2: "coll2" }
-let opt: TableOptions<typeof dataSimple> = { eventConfig: events_custom }
+
+
+function setArgs(...args: AddEventSig): SortSig {
+  // let setArgs: SetArgsT = function setArgs(...args) {
+  let e: Event = args[2]
+  let n: number = 33
+  return [e, n]
+}
+
+const eventsTest: EventConfig = {
+  "header": {
+    click: {
+      args: setArgs,
+      action: "sort"
+    },
+    scroll: {
+      args: setArgs,
+      action: "add-row"
+    }
+  }
+} as const
+
+
+let opt: TableOptions<typeof dataSimple> = { eventConfig: eventsTest }
+
 // let table = new Table({ data: cryptoData, container: container })
 let table = new Table(container, dataSimple, h, opt)
 // table.data = cryptoData
 // table.data = cryptoData
 table.draw()
+
+
+
+
+
+
