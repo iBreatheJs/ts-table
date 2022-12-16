@@ -7,7 +7,12 @@ export interface Dict<TValue> {
 }
 
 // TODO: implement checkbox etc. for bool
-export type ColData = number | string | boolean
+// undefined so u dont have to define cols which are empty in some rows
+export type ColData = number | string | boolean | undefined
+
+// performance, what i expect: best is array with fixed length, then known header, last is unknown length of each row 
+// could have different implementation for drawing, but if u dont do it all in one go which is unnecessary complicated only have to iterate once before to get unique keys 
+// ... and for drawing use the key lookup impl, or eventually array impl
 export type RowData = Dict<ColData>
 // obj format is nice because no order and empty fields
 // export type RowData2 = Data2[]
@@ -34,11 +39,19 @@ let data3 = [
 
 // init this table so i can access the method types:
 let container = "" as unknown as HTMLTableElement
-let table = new Table(container, [])
-export type SortSig = Parameters<typeof table.sort>
-export type AddEventSig = Parameters<typeof addEvents>
+let table = new Table(container, data)
 
-export type SetArgsT = (...args: AddEventSig) => SortSig
+type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P extends Table<infer X> ? X : P : never;
+type extractGeneric<Type> = Type extends Table<infer X> ? X : never
+
+// type extracted = extractGeneric<typeof table>
+
+
+
+export type SortSig = Parameters<typeof table.sort>
+export type AddEventSig<Data extends TableData> = Parameters<typeof addEvents>
+
+export type SetArgsT = (event: Event, ...args: AddEventSig) => SortSig
 
 // improve: type could depend on key
 export type EventConfig = Dict<Dict<EventConfigEntry>>
@@ -205,3 +218,81 @@ let headerMultiArr = [
 ]
 let header2 = ["col1", "col2"]
 let header3 = [["col1", "col1"], { col2: "col1" }]
+
+
+// rust type result type
+interface Error<T> {
+    code: T;
+    message: string;
+}
+type Success<T> {
+    val: T
+}
+
+type Result<T, E> = Success<T> | Error<E>
+
+//  ---------
+// all this should be abstracted from table into cdb. table only needs to care about src and display name
+let headerConcept = {
+    srcName: {
+        localNames: {
+            de: "pimmel",
+            en: "dick",
+            es: "verga"
+        },
+        alias: "dick",
+        visible: false
+    },
+    srcName2: {
+        localNames: {
+            de: "pimmel",
+            en: "dick",
+            es: "verga"
+        },
+        alias: "dick"
+    },
+
+}
+
+let aliasGroups = {
+    de: {
+        dick: ["schwanz", "beidl", ""]
+    }
+}
+
+let aliasGroups2 = [
+    ["schwanz", "beidl", "?cock"],
+    ["Preis", "price", "?price"],
+    ["Lohn", "Gehalt", "Bezahlung"], //requires context time
+    ["Jahresgehalt", "Bezahlung pro Jahr", "Geld pro Jahr", "Geld / Jahr"], // geld / jahr is actually a formula, should that/there be a formula alias
+]
+
+// to help specify, and infer certain things for better suggestions
+// idk if its overkill, some advanced type system...
+let aliasAttachments: {
+    "Jahresgehalt": {
+        time: "y"
+    }
+}
+
+// better
+// u specify context once eg for gehalt as month, then everytime u try to use gehalt it suggests time context so u can select. somehow option to enforce it!!! how to impl?!?
+let context = {
+    time: ["Lohn"],
+    currency: []
+}
+
+
+// normalize to some interval eg. y or s then lookup in table, multiply with key (src) and divide by key (target)
+let timeMultiplier = {
+    y: 1,
+    m: 12,
+    d: 365
+}
+// theres also anaother angle: duration vs point in time (current, at_date_in_past) for eg. btc transaction to know how much $ that was when it happend. 
+
+
+// indexed by main alias??
+let formulas = {
+    "Jahresgehalt netto": "(Lohn * 12) * some_percentage + Lohn *2 * other_percentage",
+}

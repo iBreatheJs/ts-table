@@ -22,24 +22,27 @@ export function addEvents<Data extends TableData>(table: Table<Data>, el: HTMLEl
     for (evtName in cfg) {
         let entry = cfg[evtName]
         action = cfg[evtName].action
-        console.log("entryyyyy");
-        console.log(entry);
-        console.log("action");
-        console.log(action);
+        // console.log("entryyyyy");
+        // console.log(entry);
+        // console.log("action");
+        // console.log(action);
 
         let a = table.actions
         let fn = table.actions[action].fn
-        console.log("fn");
-        console.log(fn);
+        let ev: Event = "" as unknown as Event
 
-        if (fn) {
-            el.addEventListener(evtName, (evt) => {
-                let args = [el]
-                fn(evt, ...args)
-                // this.sortTable(nr),
-                //     this.changeColourEvenRows()
-            }, false);
-        }
+
+        el.addEventListener(evtName, (evt) => {
+            let args: [number] = [3]
+            let a = entry.args
+            if (a) {
+                let p = a(evt, table, el, cfg)
+                fn(...p)
+            }
+
+            // this.sortTable(nr),
+            //     this.changeColourEvenRows()
+        }, false);
     }
 }
 

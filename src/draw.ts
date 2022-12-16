@@ -1,6 +1,6 @@
 import { addEvents } from "./events";
 import { Table } from "./table";
-import { ColData, RowData, TableContainer, TableData } from "./types";
+import { ColData, Dict, RowData, TableContainer, TableData } from "./types";
 
 export function drawTable<Data extends TableData>(table: Table<Data>) {
     console.time("drawTable")
@@ -20,9 +20,14 @@ export function drawTable<Data extends TableData>(table: Table<Data>) {
     // draw
     todo: // narrow container to htmltableelement
     drawTableBody(table, container)
+    console.timeEnd("drawTable")
 
 }
+
+
 function drawTableChecks<Data extends TableData>(container: TableContainer, data: Data, table: Table<Data>) {
+    console.log("draw table checks");
+
     // checks if necessary properties are configured
     // necessary is:
     //  data: for the table
@@ -30,6 +35,51 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
     // consider:
     //  data - table could be empty
     //  container - could default to sth like append to body
+
+    if ((!table.data || Object.keys(table.data)) && !table.header) {
+        throw new Error("Ether `data` or `header` has to be set to draw the table.")
+    }
+
+    // explicit request for no header, but data is provided and not empty
+    // todo: maybe draw and just hide it?? idk about addressing the cells wo header
+    if (table.header === false) {
+        console.log("Drawing table with no header (table.header == false).");
+    } else {
+
+
+        // ----- these r more conversons than checks
+
+
+        // auto generate header
+        // todo check empty not false bc i turned false into marker for no header instruction
+        if (!table.header) {
+            if (Array.isArray(table.data)) {
+
+                // get unique keys
+                // todo: store and merge w keys specified in wrapper (cdb) for possible keys which could be fetched from db
+                let uniqueKeys: string[]
+                let keySet = new Set<string>();
+                for (let row of table.data) {
+                    for (let col in row) {
+                        keySet.add(col);
+                    }
+                }
+                uniqueKeys = [...keySet]
+
+                // unique keys to header
+                let h: Dict<string> = {}
+                if (!uniqueKeys) {
+
+                } else {
+                    for (let val of uniqueKeys) {
+                        table.header[val] = val
+                    }
+                }
+            }
+        }
+
+    }
+
 
 
 
@@ -134,6 +184,9 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
         table.addRow(table, row)
     }
 
+
+
+
     // // TODO: check this here y did i not put it in the function??
     // // for in returns key (and also Array index) as string
     // for (let row in this.data) {
@@ -159,7 +212,6 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
     // this.initialized = true
     // this.changeColourEvenRows()
 
-    console.timeEnd("drawTable")
 
 }
 
@@ -246,8 +298,6 @@ function drawTableHeader<Data extends TableData>(table: Table<Data>) {
         // th.style.cssText = " border: 1px solid #ddd;"
 
         let test = table.eventConfig
-        console.log("test");
-        console.log(test);
 
         addEvents(table, th, table.eventConfig?.header)
 
@@ -266,9 +316,10 @@ function drawTableHeader<Data extends TableData>(table: Table<Data>) {
 
 }
 
+
 // export function addRow<Data extends TableData>(table: Table<Data>, keyOrIndex: string | number | "header") {
 export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowData) {
-    console.log("add row");
+    // console.log("add row");
 
     let row = document.createElement("tr");
     let tableHtml = table.container as HTMLTableElement
@@ -283,9 +334,19 @@ export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowD
 
     // generate columns
 
-    if (!table.header) {
-        const uniqueKeys = [...new Set(table.data.map((item: RowData) => Object.keys(item)))]; // [ 'A', 'B']
-    }
+
+    // if (!table.header) {
+
+    //     if (Array.isArray(table.data)) {
+
+    //         // 105ms 
+    //         const uniqueKeys = [...new Set(table.data.map((item: RowData) => Object.keys(item)))]; // [ 'A', 'B']
+    //     }
+    //     // console.log("uniqueKeys");
+    //     // console.log(uniqueKeys);
+
+    // }
+
 
     for (const col in table.header) {
 
