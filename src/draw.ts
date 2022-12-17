@@ -1,6 +1,6 @@
 import { addEvents } from "./events";
 import { Table } from "./table";
-import { ColData, Dict, RowData, TableContainer, TableData } from "./types";
+import { ColData, Dict, EventConfig, RowData, TableContainer, TableData, TableHeader } from "./types";
 
 export function drawTable<Data extends TableData>(table: Table<Data>) {
     console.time("drawTable")
@@ -10,12 +10,16 @@ export function drawTable<Data extends TableData>(table: Table<Data>) {
 
 
     // checks
-    // todo/assertion
+    // header is infered in drawTableChecks based on data (for indexing cols), remember state here to skip drawing of header
+    let skipHeader = table.header === false ? true : false;
     let container = drawTableChecks(table.container, table.data, table) as HTMLTableElement
 
+    //todo make shure container n header are the right type, (returned from checks!??)
+    table.header = table.header as TableHeader
 
     // HEADER
-    if (table.header) drawTableHeader(table)
+
+    if (!skipHeader) drawTableHeader(table.header, container, table)
 
     // draw
     todo: // narrow container to htmltableelement
@@ -36,49 +40,27 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
     //  data - table could be empty
     //  container - could default to sth like append to body
 
-    if ((!table.data || Object.keys(table.data)) && !table.header) {
+    if ((!table.data || !Object.keys(table.data)) && !table.header) {
         throw new Error("Ether `data` or `header` has to be set to draw the table.")
     }
 
     // explicit request for no header, but data is provided and not empty
-    // todo: maybe draw and just hide it?? idk about addressing the cells wo header
+    // header is created in memory for indexing cols but not drawn to DOM
     if (table.header === false) {
         console.log("Drawing table with no header (table.header == false).");
+        table.header = {}
+    } else if (table.header === true) {
+        table.header = {}
     } else {
-
-
-        // ----- these r more conversons than checks
-
-
-        // auto generate header
-        // todo check empty not false bc i turned false into marker for no header instruction
-        if (!table.header) {
-            if (Array.isArray(table.data)) {
-
-                // get unique keys
-                // todo: store and merge w keys specified in wrapper (cdb) for possible keys which could be fetched from db
-                let uniqueKeys: string[]
-                let keySet = new Set<string>();
-                for (let row of table.data) {
-                    for (let col in row) {
-                        keySet.add(col);
-                    }
-                }
-                uniqueKeys = [...keySet]
-
-                // unique keys to header
-                let h: Dict<string> = {}
-                if (!uniqueKeys) {
-
-                } else {
-                    for (let val of uniqueKeys) {
-                        table.header[val] = val
-                    }
-                }
-            }
-        }
-
+        // only for ordered data like array. might implement that in the future but probably not worth it because 
+        // headers are found relatively fast, helpfull for indexing and can be hidden in dom
     }
+
+
+    // ----- these r more conversons than checks
+
+    // infer table header based on unique keys in data
+    table.header = inferHeader<Data>(table.data)
 
 
 
@@ -94,6 +76,10 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
         let div = document.createElement("div")
         table.container = document.body.appendChild(div)
     }
+
+    // todo make sure container is a htmltableelement and change tableBasic to value from config
+    container = container as HTMLTableElement
+    container.classList.add("tableBasic")
 
     return container
 
@@ -135,11 +121,143 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
     // }
 }
 
+function inferHeader<Data extends TableData>(data: Data) {
 
+    // auto generate header
+    let header: TableHeader = {}
+    if (Array.isArray(data)) {
+        // get unique keys
+        // todo: store and merge w keys specified in wrapper (cdb) for possible keys which could be fetched from db
+        let uniqueKeys: string[]
+        let keySet = new Set<string>();
+        for (let row of data) {
+            for (let col in row) {
+                keySet.add(col);
+            }
+        }
+        uniqueKeys = [...keySet]
+
+        // unique keys to header
+        let h: Dict<string> = {}
+        if (!uniqueKeys) {
+
+        } else {
+            for (let val of uniqueKeys) {
+                header[val] = val
+            }
+        }
+    }
+    return header
+}
+
+// function drawTableHeader<Data extends TableData>(table: Table<Data>) {
+function drawTableHeader<Data extends TableData>(header: TableHeader, container: HTMLTableElement, table: Table<Data>) {
+    console.log("draw table header");
+    console.log(header)
+    // HEADER
+    // console.log(this.container)
+
+    // todo make sure container is a htmltableelement
+    // container = container as HTMLTableElement
+    let thead = container.createTHead();
+
+
+    // // insert searchbar in header if option is checked
+    let searchRow = thead.insertRow();
+    let searchCell = document.createElement("td");
+    searchCell.setAttribute("colspan", String(Object.keys(header).length))
+    searchRow.append(searchCell)
+
+
+    // if (this.options.search) {
+
+    //     let searchInput = document.createElement("input");
+    //     searchInput.type = "text";
+    //     searchInput.placeholder = "Searcg for anything in Row or filter";
+    //     searchInput.id = this.container.id + "_search"
+    //     searchInput.style.float = "left"; // todo better style wo float
+    //     this.searchHtml = searchInput
+
+    //     let searchVal = "";
+    //     searchInput.onkeyup = (ev) => {
+    //         if (searchInput.value === searchVal) return;
+
+    //         let filter = {
+    //             val: searchInput.value,
+    //             include: searchInput.value < searchVal ? true : false // true -> deleted char -> include hidden rows(depending on other filters), false - added char --> narrow / remove visible rows
+    //         }
+    //         searchVal = searchInput.value;
+
+    //         this.filter_oneAtATime(filter)
+
+    //     }
+    //     searchCell.append(searchInput)
+    // }
+
+    // // i'll leave this check here instead of constructor so the table can be redrawn with diffrent params - idk if theres a case for that tho
+    // if (this.options.rowCount != false) {
+    //     this.rowCntHtml = document.createElement("div");
+    //     this.rowCntHtml.style.float = "left"; // todo better style wo float
+    //     this.rowCntHtml.id = this.container.id + "_row-counter";
+    //     this.rowCntHtml.innerHTML = String(this.tableData.length)
+    //     searchCell.append(this.rowCntHtml)
+    // }
+
+
+
+
+    // // insert filter box in header if option is checked
+    // var filterRow = null
+    // if (this.options.filter) {
+    //     filterRow = thead.insertRow();
+    //     let btn = document.createElement("button");
+    //     btn.style.float = "left"; // todo better style wo float
+    //     btn.textContent = "fltr"
+    //     searchCell.append(btn)
+    // }
+
+    // if (this.options.showRules) {
+    //     let rulesRow = thead.insertRow();
+    //     let btn = document.createElement("button");
+    //     btn.textContent = "rulez"
+    //     btn.style.float = "left"; // todo better style wo float
+    //     searchCell.append(btn)
+    //     rulesRow.innerHTML = "rulez"
+    // }
+
+    if (typeof header == "boolean") {
+        throw new Error("tried to add row to table with invalid header");
+    }
+
+    let rowHeader = thead.insertRow();
+    var colNr = 0;
+    for (let key in header) {
+        let nr = colNr
+        let th = document.createElement("th");
+        // Object.assign(th.style, tableStyle.th);
+        // th.style.cssText = " border: 1px solid #ddd;"
+
+        let test = table.eventConfig
+
+        addEvents(table, th, table.eventConfig?.header)
+
+        // if sortable
+        // if (this.options.sortable?.all) {
+        //     th.addEventListener('click', () => { this.sortTable(nr), this.changeColourEvenRows() }, false);
+
+        //     // TODO: implement for specific cols only / possibility to disable some
+        // }
+        let text = document.createTextNode(header[key]);
+        th.appendChild(text);
+        rowHeader.appendChild(th);
+        colNr++
+    }
+}
 
 // let drawTableDraw = <Data extends TableData>() => {
 function drawTableBody<Data extends TableData>(table: Table<Data>, container: HTMLTableElement) {
-    console.log("drawtabledrawdwwww");
+    console.log("drawtable body");
+    console.log(table.header);
 
 
     // TABLE
@@ -215,106 +333,6 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
 
 }
 
-function drawTableHeader<Data extends TableData>(table: Table<Data>) {
-    // HEADER
-    // console.log(this.container)
-
-    // todo make sure container is a htmltableelement
-    let container = table.container as HTMLTableElement
-    container.classList.add("tableBasic")
-    let thead = container.createTHead();
-
-    // // insert searchbar in header if option is checked
-    let searchRow = thead.insertRow();
-    let searchCell = document.createElement("td");
-    searchCell.setAttribute("colspan", String(Object.keys(table.header).length))
-    searchRow.append(searchCell)
-
-
-    // if (this.options.search) {
-
-    //     let searchInput = document.createElement("input");
-    //     searchInput.type = "text";
-    //     searchInput.placeholder = "Searcg for anything in Row or filter";
-    //     searchInput.id = this.container.id + "_search"
-    //     searchInput.style.float = "left"; // todo better style wo float
-    //     this.searchHtml = searchInput
-
-    //     let searchVal = "";
-    //     searchInput.onkeyup = (ev) => {
-    //         if (searchInput.value === searchVal) return;
-
-    //         let filter = {
-    //             val: searchInput.value,
-    //             include: searchInput.value < searchVal ? true : false // true -> deleted char -> include hidden rows(depending on other filters), false - added char --> narrow / remove visible rows
-    //         }
-    //         searchVal = searchInput.value;
-
-    //         this.filter_oneAtATime(filter)
-
-    //     }
-    //     searchCell.append(searchInput)
-    // }
-
-    // // i'll leave this check here instead of constructor so the table can be redrawn with diffrent params - idk if theres a case for that tho
-    // if (this.options.rowCount != false) {
-    //     this.rowCntHtml = document.createElement("div");
-    //     this.rowCntHtml.style.float = "left"; // todo better style wo float
-    //     this.rowCntHtml.id = this.container.id + "_row-counter";
-    //     this.rowCntHtml.innerHTML = String(this.tableData.length)
-    //     searchCell.append(this.rowCntHtml)
-    // }
-
-
-
-
-    // // insert filter box in header if option is checked
-    // var filterRow = null
-    // if (this.options.filter) {
-    //     filterRow = thead.insertRow();
-    //     let btn = document.createElement("button");
-    //     btn.style.float = "left"; // todo better style wo float
-    //     btn.textContent = "fltr"
-    //     searchCell.append(btn)
-    // }
-
-    // if (this.options.showRules) {
-    //     let rulesRow = thead.insertRow();
-    //     let btn = document.createElement("button");
-    //     btn.textContent = "rulez"
-    //     btn.style.float = "left"; // todo better style wo float
-    //     searchCell.append(btn)
-    //     rulesRow.innerHTML = "rulez"
-    // }
-
-    // todo: auto header based on data
-
-    let rowHeader = thead.insertRow();
-    var colNr = 0;
-    for (let key in table.header) {
-        let nr = colNr
-        let th = document.createElement("th");
-        // Object.assign(th.style, tableStyle.th);
-        // th.style.cssText = " border: 1px solid #ddd;"
-
-        let test = table.eventConfig
-
-        addEvents(table, th, table.eventConfig?.header)
-
-        // if sortable
-        // if (this.options.sortable?.all) {
-        //     th.addEventListener('click', () => { this.sortTable(nr), this.changeColourEvenRows() }, false);
-
-        //     // TODO: implement for specific cols only / possibility to disable some
-        // }
-        let text = document.createTextNode(table.header[key]);
-        th.appendChild(text);
-        rowHeader.appendChild(th);
-        colNr++
-    }
-
-
-}
 
 
 // export function addRow<Data extends TableData>(table: Table<Data>, keyOrIndex: string | number | "header") {
@@ -347,7 +365,10 @@ export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowD
 
     // }
 
-
+    // todo: at this time header should be defined. maybe assert to avoid this check every time
+    if (typeof table.header == "boolean") {
+        throw new Error("tried to add row to table with invalid header");
+    }
     for (const col in table.header) {
 
         let value: ColData;

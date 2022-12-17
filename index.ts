@@ -1,5 +1,2 @@
-import { Table } from "./src/table";
-
-export {
-    Table
-}
+export * from "./src/table";
+export * from "./src/types";

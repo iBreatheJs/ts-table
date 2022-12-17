@@ -49,6 +49,7 @@ type extractGeneric<Type> = Type extends Table<infer X> ? X : never
 
 
 export type SortSig = Parameters<typeof table.sort>
+// export type AddEventSig<Data extends TableData> = Parameters<typeof addEvents>
 export type AddEventSig<Data extends TableData> = Parameters<typeof addEvents>
 
 export type SetArgsT = (event: Event, ...args: AddEventSig) => SortSig
@@ -84,8 +85,8 @@ interface EventConfigEntry {
 
 export interface TableParams<Data extends TableData> {
     container: TableContainer,
-    header?: Dict<string>,
     data: Data,
+    header?: TableHeader | boolean,
     options?: TableOptions<Data> | {}
 }
 
@@ -199,6 +200,7 @@ export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefi
  * 3. false: no header
  */
 export type TableHeader = Dict<string>
+// | boolean
 
 let header = { col1: "col1", col2: "col2" }
 let headerMulti = {
@@ -225,7 +227,7 @@ interface Error<T> {
     code: T;
     message: string;
 }
-type Success<T> {
+type Success<T> = {
     val: T
 }
 

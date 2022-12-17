@@ -1,7 +1,7 @@
-import { Table, TableCreator } from '../../../src/table'
+import { Table } from '../../../src/table'
 import { AddEventSig, Dict, EventConfig, SetArgsT, SortSig, TableData, TableOptions, TableParams } from '../../../src/types'
 import cryptoData from '../data/tradesTest'
-import { addEvents, events_custom, events_default } from '../../../src/events'
+import { addEvents, events_default } from '../../../src/events'
 console.log("tstable test server started")
 console.log(cryptoData)
 
@@ -31,7 +31,7 @@ let setArgs: SetArgsT = function setArgs(...args) {
   return [e, n]
 };
 
-let doSth: SetArgsT = (event, table, el, cfg) {
+let doSth: SetArgsT = (event, table, el, cfg) => {
   alert("hs")
   return [event, 44]
 };
@@ -56,61 +56,11 @@ const eventsTest: EventConfig = {
 
 let opt: TableOptions<typeof dataSimple> = { eventConfig: eventsTest }
 
+
 // let table = new Table({ data: cryptoData, container: container })
-let table = new Table(container, cryptoData, undefined, opt)
-// table.data = cryptoData
+let table = new Table(container, cryptoData, true, opt)
+table.data = cryptoData
 // table.data = cryptoData
 table.draw()
-
-type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P extends Table<infer X> ? X : P : never;
-type extractGeneric<Type> = Type extends Table<infer X> ? X : never
-
-type extracted = Parameters<typeof addEvents>
-
-
-let tc = new TableCreator(container, dataSimple)
-tc.draw()
-tc
-
-class ContainerCls {
-  table: null | string
-  constructor() {
-    this.table = null
-  }
-}
-
-const Employee: {
-
-  firstname?: string,
-  lastname: 'Doe',
-  as: Function
-} = {
-  firstname: 'John',
-  lastname: 'Doe',
-  as: (e: any) => { e.firstname :as structuredClone = "sdf" }
-};
-
-console.log(Employee.firstname);
-// expected output: "John"
-
-delete Employee.firstname;
-
-console.log(Employee.firstname);
-// expected output: undefined
-
-Employee.as(Employee)
-Employee.firstname
-interface A<Data extends TableData> {
-  t: Table<Data> | TableCreator<Data>
-  draw: Function
-}
-
-let a: A<typeof dataSimple> = {
-  t: new TableCreator(container, dataSimple),
-  draw: () => { return new Table(container, dataSimple) }
-}
-
-a.draw()
-a.t
 
 
