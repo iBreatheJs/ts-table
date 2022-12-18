@@ -50,9 +50,11 @@ type extractGeneric<Type> = Type extends Table<infer X> ? X : never
 
 export type SortSig = Parameters<typeof table.sort>
 // export type AddEventSig<Data extends TableData> = Parameters<typeof addEvents>
-export type AddEventSig<Data extends TableData> = Parameters<typeof addEvents>
+// export type AddEventSig<Data extends TableData> = 
+export type EventCb<Data extends TableData> = (table: Table<Data>, el: HTMLElement, localEvent: EventT) => SortSig
+export type EventCb2<Data extends TableData> = (event: Event, table: Table<Data>, el: HTMLElement, localEvent: EventT) => SortSig
 
-export type SetArgsT = (event: Event, ...args: AddEventSig) => SortSig
+// export type SetArgsT = (event: Event, ...args: AddEventSig) => SortSig
 
 // improve: type could depend on key
 export type EventConfig = Dict<Dict<EventConfigEntry>>
@@ -298,3 +300,29 @@ let timeMultiplier = {
 let formulas = {
     "Jahresgehalt netto": "(Lohn * 12) * some_percentage + Lohn *2 * other_percentage",
 }
+
+
+type PickMatching<T, V> =
+    { [K in keyof T as T[K] extends V ? K : never]: T[K] }
+
+type ExtractMethods<T> = PickMatching<T, Function>;
+
+class Foo {
+    bar() { }
+    baz() { }
+    notAMethod = 123;
+    funcProp = () => 10;
+}
+
+type FooMethod = ExtractMethods<Table<TableData>>
+/* type FooMethod = {
+    bar: () => void;
+    baz: () => void;
+    funcProp: () => number;
+} */
+
+// let fff: FooMethod = {
+
+// }
+type ttest = Table<TableData>[keyof Table<TableData>]
+let ttt = {}

@@ -1,3 +1,5 @@
+// todo: clean up
+// @ts-nocheck
 import { Table } from '../../../src/table'
 import { AddEventSig, Dict, EventConfig, SetArgsT, SortSig, TableData, TableOptions, TableParams } from '../../../src/types'
 import cryptoData from '../data/tradesTest'
@@ -30,6 +32,11 @@ let setArgs: SetArgsT = function setArgs(...args) {
   let n: number = 33
   return [e, n]
 };
+
+// let doSth: SetArgsT = (event, table, el, cfg) => {
+//   alert("hs")
+//   return [event, 44]
+// };
 
 let doSth: SetArgsT = (event, table, el, cfg) => {
   alert("hs")
