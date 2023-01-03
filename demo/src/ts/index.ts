@@ -2,7 +2,7 @@
 // @ts-nocheck
 import { Table } from '../../../src/table'
 import { AddEventSig, Dict, EventConfig, SetArgsT, SortSig, TableData, TableOptions, TableParams } from '../../../src/types'
-import cryptoData from '../data/tradesTest'
+import cryptoData from '../../../data/tradesTest'
 import { addEvents, events_default } from '../../../src/events'
 console.log("tstable test server started")
 console.log(cryptoData)
@@ -17,11 +17,7 @@ let tParams: TableParams<typeof cryptoData> = {
 }
 // let table = new Table({container: container,data:cryptoData,header:header})
 
-let dataSimple = [
-  { col1: "data1", col2: "r1c2" },
-  { col1: "data2", col2: "r2c2", kk: "kaka" },
-  { col1: "data33333", col2: "r3c2" }
-]
+
 let emptyD = {}
 let h = { col1: "col1", col2: "coll2" }
 
