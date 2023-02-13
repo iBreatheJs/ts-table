@@ -36,7 +36,7 @@ import {
      *      
      * todo consider always assigning an ID in case the passed element has none 
      */
- export function getOrCreateContainer(container: TableContainer) : HTMLTableElement{
+export function getOrCreateContainer(container: TableContainer): HTMLTableElement {
 
     var tableHtml: HTMLTableElement
     let id;

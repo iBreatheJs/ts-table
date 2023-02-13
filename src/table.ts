@@ -96,6 +96,9 @@ export class Table<Data extends TableData>{
         // init with obj of params - first arg is params
         let asdf = { a: containerOrParams, b: data }
 
+        console.log("containerrr");
+        console.log(container);
+
         // Only checks for obj type with manditory data property. 
         // Not boolean is asserted in else... constructor overloads enforce it but ts cant infer that unfortunatelly.
         if (this.argIsObject(containerOrParams)) {

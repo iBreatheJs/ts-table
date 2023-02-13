@@ -1,3 +1,4 @@
+import { getOrCreateContainer } from "./container";
 import { addEvents } from "./events";
 import { Table } from "./table";
 import { ColData, Dict, EventConfig, RowData, TableContainer, TableData, TableHeader } from "./types";
@@ -5,14 +6,14 @@ import { ColData, Dict, EventConfig, RowData, TableContainer, TableData, TableHe
 export function drawTable<Data extends TableData>(table: Table<Data>) {
     console.time("drawTable")
     console.log("draw table");
-    console.log(table.data);
-
 
 
     // checks
     // header is infered in drawTableChecks based on data (for indexing cols), remember state here to skip drawing of header
     let skipHeader = table.header === false ? true : false;
-    let container = drawTableChecks(table.container, table.data, table) as HTMLTableElement
+    let container = getOrCreateContainer(table.container)
+    table.container = container
+    drawTableChecks(table.container, table.data, table)
 
     //todo make shure container n header are the right type, (returned from checks!??)
     table.header = table.header as TableHeader
@@ -81,7 +82,7 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
     container = container as HTMLTableElement
     container.classList.add("tableBasic")
 
-    return container
+    return
 
 
 
@@ -154,6 +155,7 @@ function inferHeader<Data extends TableData>(data: Data) {
 function drawTableHeader<Data extends TableData>(header: TableHeader, container: HTMLTableElement, table: Table<Data>) {
     console.log("draw table header");
     console.log(header)
+    console.log(container)
     // HEADER
     // console.log(this.container)
 

@@ -85,11 +85,18 @@ interface EventConfigEntry {
 
 
 
-export interface TableParams<Data extends TableData> {
+export type TableParamsTuple<T extends TableData> = [
     container: TableContainer,
-    data: Data,
+    data: T,
     header?: TableHeader | boolean,
-    options?: TableOptions<Data> | {}
+    options?: TableOptions<T> | {}
+
+]
+export interface TableParams<T extends TableData> {
+    container: TableContainer,
+    data: T,
+    header?: TableHeader | boolean,
+    options?: TableOptions<T> | {}
 }
 
 // used for callback functions to hint the correct index type
