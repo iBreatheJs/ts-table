@@ -1,4 +1,5 @@
-import { Table, TableContainer, TableData, TableOptions } from '../table';
+import { Table } from '../src/table';
+import { TableOptions } from '../src/types';
 
 
 // test configs

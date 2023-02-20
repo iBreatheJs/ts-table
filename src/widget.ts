@@ -26,7 +26,7 @@ export class TableWidget<T extends TableData> extends Table<T> implements IWidge
     // constructor(widget: Widget<IWidgetRequirementsNew>, ...args: TableParamsTuple<T>) {
     constructor(widget: Widget<IWidgetRequirementsNew>, args: Omit<TableParams<T>, 'container'>) {
         // constructor(specificTableShit: string, ...args: ConstructorParameters<typeof Table<T>>) {
-        let container = widget.wrapper.div
+        let container = widget.wrapper.div // todo: double, already assign it as arg ? matter of syntax: override when creating a widget or define fixed order arg as container?? do widgets need contaiers always?? todotodo
         let defaultArgs: TableParams<typeof testData.simple.data> = { data: testData.simple.data, header: testData.simple.header, container: testData.simple.container }
         // super(...args)
         // super(testData.simple.container, testData.simple.data)
