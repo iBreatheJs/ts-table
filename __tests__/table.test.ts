@@ -76,9 +76,9 @@ describe('TABLE CREATION', () => {
     {
       let container = document.createElement("table")
       container.id = "tableID"
-      let table = new Table(container, header, data)
+      let table = new Table(container, data, header)
       test('create Table with container type ' + container.tagName + " (with ID - leave id as is) id: " + table.tableHtml.id, () => {
-        expect(table.tableHtml.tagName, 'should return table').toBe("TABLE");
+        expect(table..tagName, 'should return table').toBe("TABLE");
         expect(table.tableHtml.id, 'id should be ID of table passed').toBe(container.id);
       });
     }

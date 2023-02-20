@@ -94,6 +94,7 @@ export function getOrCreateContainer(container: TableContainer): HTMLTableElemen
 
     } else {
         // element found, check tag
+        // can be: table, div, string
         var tagName = html?.tagName
         if (tagName === "TABLE") {
             return html as HTMLTableElement

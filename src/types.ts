@@ -93,6 +93,18 @@ export type TableParamsTuple<T extends TableData> = [
 
 ]
 export interface TableParams<T extends TableData> {
+    /**
+     * optional, falls back to:
+     *      create div, append to body
+     * if provided can be:
+     *      div
+     *      table
+     *      string (id of element)
+     *          exists: 
+     *              use element w id
+     *          doesn't exist: 
+     *              create element w id, append to body
+     */
     container: TableContainer,
     data: T,
     header?: TableHeader | boolean,
