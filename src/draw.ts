@@ -4,32 +4,40 @@ import { Table } from "./table";
 import { ColData, Dict, EventConfig, RowData, TableContainer, TableData, TableHeader } from "./types";
 
 export function drawTable<Data extends TableData>(table: Table<Data>) {
-    console.time("drawTable")
     console.log("draw table");
-
 
     // checks
     // header is infered in drawTableChecks based on data (for indexing cols), remember state here to skip drawing of header
-    let skipHeader = table.header === false ? true : false;
+    // let skipHeader = table.header === false ? true : false;
     let container = getOrCreateContainer(table.container)
     table.container = container
     drawTableChecks(table.container, table.data, table)
 
     //todo make shure container n header are the right type, (returned from checks!??)
-    table.header = table.header as TableHeader
+    // table.header = table.header as TableHeader
 
     // HEADER
 
-    if (!skipHeader) drawTableHeader(table.header, container, table)
+    console.log("headerrr bf");
+    console.log(table.header);
+    if (table.options.header.infer) table.header = { ...inferHeader(table.data), ...table.header } // setup header on draw could be in constructor after setup options
+    if (!table.options.header.hide) { drawTableHeader(table.header, container, table) }
+    console.log("headerrr");
+    console.log(table.header);
 
     // draw
     todo: // narrow container to htmltableelement
     drawTableBody(table, container)
     console.timeEnd("drawTable")
+    return container
 
 }
 
-
+/**
+ * todo
+ * make that actual checks that throw errors and warnings if certain conditions, required for drawing the table, r not met 
+ * do the options setup before but idk when draw table makes sense to be recalled and if and if it should be here...??>?>?
+ */
 function drawTableChecks<Data extends TableData>(container: TableContainer, data: Data, table: Table<Data>) {
     console.log("draw table checks");
 
@@ -44,6 +52,9 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
     if ((!table.data || !Object.keys(table.data)) && !table.header) {
         throw new Error("Ether `data` or `header` has to be set to draw the table.")
     }
+
+    // moved the header logic into setupOptions called in constructor
+    return
 
     // explicit request for no header, but data is provided and not empty
     // header is created in memory for indexing cols but not drawn to DOM
@@ -448,4 +459,12 @@ export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowD
     //         }
     //     }
     // }
+}
+
+/**
+ * only change data (innerHtml of cells)
+ * only modify DOM Nodes if rowNr changes (remove / add (un)necessary rows)
+ */
+function redrawWithChangedData() {
+
 }

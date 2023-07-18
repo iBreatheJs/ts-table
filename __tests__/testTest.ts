@@ -1,4 +1,14 @@
-import { RowData, Table, TableContainer, TableData } from "../table";
+import { Table } from "../src/table";
+import {
+    Dict,
+    TableParams,
+    TableOptions,
+    TableHeader,
+    RowData,
+    EventConfig,
+    // Actions,
+    ActionConfig
+} from '../src/types'
 
 var data = [
     {
@@ -94,7 +104,7 @@ function execute(combination) {
     // set id if attribute available, because of error on string
     try {
         container.id = id
-    } catch (error) {}
+    } catch (error) { }
 
     return new Table(container, header, data).tableHtml
 }
@@ -143,3 +153,44 @@ export function testAllPairs(execute, expect, args: any, variablesNames) {
     resTable.drawTable()
 }
 
+
+// actual tests, what should be checked / compared:
+
+
+
+/**
+ * check if table exists
+ */
+let testExists = () => {
+}
+
+/**
+ * check header
+ */
+let testHeader = () => {
+}
+
+/**
+ * check where in the DOM the table element is inserted.
+ */
+let testDomLocation = () => {
+}
+
+
+// rules
+
+function rulesHeader() {
+    let header: TableParams<typeof data>['header']
+    switch (typeof header) {
+        case "boolean":
+            break;
+        case "string":
+            break;
+        case true:
+            break;
+
+        default:
+            break;
+    }
+    // if(header)
+}

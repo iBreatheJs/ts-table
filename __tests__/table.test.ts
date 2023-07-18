@@ -1,5 +1,5 @@
 import { Table } from '../src/table';
-import { TableOptions } from '../src/types';
+import { TableContainer, TableOptions } from '../src/types';
 
 
 // test configs
@@ -74,11 +74,35 @@ describe('TABLE CREATION', () => {
      * ID: tableID (leave as is)
      */
     {
+      // TABLE
+      // table w id
+      let tableId = document.createElement("table")
+      tableId.id = "tableId"
+      // table no id
+      let tableNoId = document.createElement("table")
+
+      // DIV
+      // div w id
+      let divId = document.createElement("div")
+      divId.id = "divId"
+      // div no id
+      let divNoId = document.createElement("div")
+      let wrongTagArticle = document.createElement("article")
+      wrongTagArticle.id = "wrongTagArticleId"
+
+      // string
+      let strTableId = "tableId"
+      let strDivId = "divId"
+      let strNewId = "newTableId" // table should be created w this id
+      let strWrongTagId = "wrongTagArticleId" // error expected
+      // table w id
       let container = document.createElement("table")
       container.id = "tableID"
       let table = new Table(container, data, header)
       test('create Table with container type ' + container.tagName + " (with ID - leave id as is) id: " + table.tableHtml.id, () => {
-        expect(table..tagName, 'should return table').toBe("TABLE");
+        // check type: HTMLTableElement
+        expect(table.tableHtml.tagName, 'tagName should be table').toBe("TABLE");
+        // check id
         expect(table.tableHtml.id, 'id should be ID of table passed').toBe(container.id);
       });
     }
@@ -89,7 +113,7 @@ describe('TABLE CREATION', () => {
      */
     {
       let container = document.createElement("table")
-      let table = new Table(container, header, data)
+      let table = new Table(container, data, header)
       test('create Table with container type ' + container.tagName + " NO id, todo: auto asign? id:" + table.tableHtml.id, () => {
         expect(table.tableHtml.tagName, 'should return table').toBe("TABLE");
         expect(table.tableHtml.id).toBe(container.id);
@@ -107,7 +131,7 @@ describe('TABLE CREATION', () => {
     {
       let container = document.createElement("div")
       container.id = "div-id"
-      let table = new Table(container, header, data)
+      let table = new Table({ container, data, header })
       test('create Table with container type ' + container.tagName + " id: " + table.tableHtml.id, () => {
         expect(table.tableHtml.tagName, 'should return table').toBe("TABLE");
         expect(table.tableHtml.parentElement, 'table has to be inside the div passed as arg').toBe(container);
@@ -125,7 +149,7 @@ describe('TABLE CREATION', () => {
      */
     {
       let container = document.createElement("div")
-      let table = new Table(container, header, data)
+      let table = new Table({ container, data, header })
       test('create Table with container type ' + container.tagName + " id: " + table.tableHtml.id, () => {
         expect(table.tableHtml.tagName).toBe("TABLE");
         expect(table.tableHtml.parentElement, 'table has to be inside the div passed as arg').toBe(container);
@@ -146,7 +170,7 @@ describe('TABLE CREATION', () => {
       let container: any = tableHtml.id
       let type: TableData = container.tagName ?? typeof container
 
-      let table = new Table(tableHtml.id, header, data)
+      let table = new Table({ container, data, header })
       test('create Table with container type ' + type + " id: " + table.tableHtml.id, () => {
         expect(table.tableHtml.tagName, 'should return table').toBe("TABLE");
         expect(table.tableHtml.id, 'id should match string passed').toBe(container);
@@ -163,7 +187,7 @@ describe('TABLE CREATION', () => {
      */
     {
       let container = document.createElement("div")
-      let table = new Table(container, header, data)
+      let table = new Table({ container, data, header })
       test('create Table with container type ' + container.tagName + " id: " + table.tableHtml.id, () => {
         expect(table.tableHtml.tagName).toBe("TABLE");
         expect(table.tableHtml.parentElement, 'table has to be inside the div passed as arg').toBe(container);
@@ -190,7 +214,7 @@ tableCreationWithError(containerInput, "input", "Cant initialize Table with prov
 function tableCreationWithError(container: TableContainer, type: string, error: string) {
   test('create Table with invalid container type ' + type + " resulted in expected error: " + error, () => {
     expect(() => {
-      new Table(container, header, data)
+      let table = new Table({ container, data, header })
     }).toThrow(error);
   });
 }

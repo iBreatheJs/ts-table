@@ -6,9 +6,9 @@ table {
   width: 100%;
 }
 
-.tableBasic td,
-.tableBasic th {
-  border: 1px solid #ddd;
+.table-basic td,
+.table-basic th {
+  border: 1px solid #c6c6c6;
   padding: 8px;
   white-space: nowrap;
 }
@@ -24,7 +24,7 @@ table {
     background-color: rgb(255, 0, 0);
 } */
 
-.tableBasic th {
+.table-basic th {
   padding-top: 12px;
   padding-bottom: 12px;
   text-align: left;

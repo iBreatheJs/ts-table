@@ -31,6 +31,6 @@
   },
   "dependencies": {
     "@types/jest-expect-message": "^1.0.3",
-    "ts-test": "file:D:/code/lib/ts-test"
+    "ts-test": "../pathTest/package.json"
   }
 }

@@ -39,14 +39,17 @@ let data3 = [
 
 // init this table so i can access the method types:
 let container = "" as unknown as HTMLTableElement
+
+//pretty fkd concept here n probably will fk me when debuging, just know this logs some stuff when types r imported
+// let cl = console.log
+// console.log = () => { }
 let table = new Table(container, data)
+// console.log = cl
 
 type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P extends Table<infer X> ? X : P : never;
 type extractGeneric<Type> = Type extends Table<infer X> ? X : never
 
 // type extracted = extractGeneric<typeof table>
-
-
 
 export type SortSig = Parameters<typeof table.sort>
 // export type AddEventSig<Data extends TableData> = Parameters<typeof addEvents>
@@ -92,6 +95,17 @@ export type TableParamsTuple<T extends TableData> = [
     options?: TableOptions<T> | {}
 
 ]
+
+
+// type TableHeaderParam = TableHeader | boolean | null | [TableHeader, boolean]
+// header options override these defaults
+export type TableHeaderParam =
+    // undefined // infer=true //todo: idk if i should define it here or just have optional params
+    | null // infer=true
+    | TableHeader // infer,hide = false
+    | false // infer,hide=true
+
+
 export interface TableParams<T extends TableData> {
     /**
      * optional, falls back to:
@@ -107,8 +121,8 @@ export interface TableParams<T extends TableData> {
      */
     container: TableContainer,
     data: T,
-    header?: TableHeader | boolean,
-    options?: TableOptions<T> | {}
+    header?: TableHeaderParam,
+    options?: TableOptions<T>
 }
 
 // used for callback functions to hint the correct index type
@@ -116,21 +130,31 @@ export type KeyOrIndex<data> = data extends Array<RowData> ? number : string;
 
 type FilterConfig = Dict<any> // todo
 
+// todo: rethink if thats needed bc it requires stupid complicated assertions when merging with default options
 export type EditOptions = {
 
     editable?: OnEditFunc | true
     extendableRows?: boolean
-} | {
-    editable?: false
+}
+    |
+{
+    // editable?: false
     extendableRows?: false
 }
 
+// manual config (infer, hide)
+// usefull for eg. infer + header: can add additional cols which are not in the data but might be needed to be filled out manually
+export interface TableHeaderParamOptions {
+    hide?: boolean // default false
+    infer?: boolean // default false, except no table header
+}
 
 /**
  * optional table Params
  * TODO: document params
  */
 export interface TableOptions1<Data extends TableData> {
+    header?: TableHeaderParamOptions
     // edit?: edit
     tableStyle?: Dict<Dict<string>>,
     alternateColour?: boolean //default true
@@ -160,7 +184,9 @@ export interface TableOptions1<Data extends TableData> {
     eventConfig?: EventConfig
 }
 
-export type TableOptions<Data extends TableData> = TableOptions1<Data> & EditOptions
+// export type TableOptions<Data extends TableData> = TableOptions1<Data> & EditOptions
+export type TableOptions<Data extends TableData> = TableOptions1<Data>
+
 
 
 // TODO, ASK: should the Data be passed as an immutable type in the beginning and then only in the table set data methode be casted?? 
@@ -208,6 +234,7 @@ export interface OnEditFunc {
 export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefined | null
 
 /**
+ * todo thats in tableparams... TableHeader is the 2nd option where its a Dict
  * 1. default or empty {}
  * 
  *      auto detect based on data provided
