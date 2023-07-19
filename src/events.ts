@@ -37,6 +37,7 @@ export function addEvents<Data extends TableData>(table: Table<Data>, el: HTMLEl
             let a = entry.args
             if (a) {
                 let p = a(evt, table, el, cfg)
+                // @ts-ignore
                 fn(...p)
             }
 

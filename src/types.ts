@@ -57,7 +57,7 @@ export type SortSig = Parameters<typeof table.sort>
 export type EventCb<Data extends TableData> = (table: Table<Data>, el: HTMLElement, localEvent: EventT) => SortSig
 export type EventCb2<Data extends TableData> = (event: Event, table: Table<Data>, el: HTMLElement, localEvent: EventT) => SortSig
 
-// export type SetArgsT = (event: Event, ...args: AddEventSig) => SortSig
+export type SetArgsT = (event: Event, ...args: AddEventSig) => SortSig
 
 // improve: type could depend on key
 export type EventConfig = Dict<Dict<EventConfigEntry>>

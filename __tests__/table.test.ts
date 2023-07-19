@@ -1,5 +1,5 @@
 import { Table } from '../src/table';
-import { TableContainer, TableOptions } from '../src/types';
+import { TableContainer, TableData, TableOptions } from '../src/types';
 
 
 // test configs

@@ -1,14 +1,14 @@
 // todo: clean up
-import { Table } from '../../../src/table'
-import { Dict, EventConfig, SortSig, TableData, TableOptions, TableParams } from '../../../src/types'
-import cryptoData from '../../../data/tradesTest'
-import { testData } from "../../../data/test-data";
-import { addEvents, events_default } from '../../../src/events'
+// import { Table } from '../../../src/table'
+// import { Dict, EventConfig, SetArgsT, SortSig, TableData, TableOptions, TableParams } from '../../../src/types'
+// import cryptoData from '../../../data/tradesTest'
+// import { testData } from "../../../data/test-data";
+// import { addEvents, events_default } from '../../../src/events'
 
 import { test22, testTest } from '../../tests/testTest'
-import { Test } from "@libbb";
+// import { Test } from "@libbb";
 
-function idk() {
+/* function idk() {
 
   console.log("tstable test server started")
   console.log(cryptoData)
@@ -63,33 +63,33 @@ function idk() {
   } as const
 
 
-  let opt: TableOptions<typeof dataSimple> = { eventConfig: eventsTest }
+  let opt: TableOptions<typeof testData.simple.data> = { eventConfig: eventsTest }
 
 
   // let table = new Table({ data: cryptoData, container: container })
-  let table = new Table(container, cryptoData, true, opt)
+  let table = new Table(container, cryptoData, null, opt)
   table.data = cryptoData
   // table.data = cryptoData
   // table.draw()
 
 
-}
+} */
 
 function inputTests() {
   // testTest()
   test22()
 }
 
-function basic() {
-  console.log("basic table scenario - tstable demo");
-  let container = document.createElement("table")
-  let params: TableParams<typeof testData.simple.data> = {
-    data: testData.simple.data,
-    container: container
-  }
-  document.body.appendChild(container)
-  let t = new Table(params)
-}
+// function basic() {
+//   console.log("basic table scenario - tstable demo");
+//   let container = document.createElement("table")
+//   let params: TableParams<typeof testData.simple.data> = {
+//     data: testData.simple.data,
+//     container: container
+//   }
+//   document.body.appendChild(container)
+//   let t = new Table(params)
+// }
 
 inputTests()
 // idk()

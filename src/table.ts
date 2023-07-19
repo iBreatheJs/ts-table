@@ -12,12 +12,13 @@ import {
     TableHeaderParam
 } from './types'
 
-import { mergeObjects } from "@lib/helpers";
+import { mergeObjects } from '@lib/helpers';
+// import { mergeObjects } from './helpers';
 import { addRow, drawTable } from './draw'
 
-import { getOrCreateContainer } from './container'
-import { table } from 'console';
-import { events_custom } from './events';
+// import { getOrCreateContainer } from './container'
+// import { table } from 'console';
+// import { events_custom } from './events';
 
 interface TableConstructor<Data extends TableData> {
     new(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data>): Table<Data>

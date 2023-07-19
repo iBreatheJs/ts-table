@@ -47,13 +47,9 @@
     // "baseUrl": "./node_modules", /* Base directory to resolve non-absolute module names. */
     "baseUrl": ".", /* Base directory to resolve non-absolute module names. */
     "paths": {
-      "@libbb": [
-        "./src/ts/test.ts"
+      "@lib/*": [
+        "../../../../../../lib/*"
       ]
-      // "@ttte": [
-      // "file:D:/code/lib/ts-test/",
-      // "./pathTest/"
-      // ]
     }, /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
     // "rootDirs": [],                              /* List of root folders whose combined content represents the structure of the project at runtime. */
     // "typeRoots": [
@@ -62,7 +58,8 @@
     "types": [
       "node",
       "jest",
-      "@types/jest-expect-message"
+      "@types/jest-expect-message",
+      "../../../../../../lib/helpers",
     ], /* Type declaration files to be included in compilation. */
     // "allowSyntheticDefaultImports": true,        /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */
     "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,

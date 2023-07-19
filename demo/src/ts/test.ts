@@ -1,3 +1,3 @@
-export function Test(params: type) {
+export function Test(params: any) {
 
 }

@@ -6,9 +6,9 @@ const DeclarationBundlerPlugin = require('./declaration-bundler-webpack-plugin.f
 
 
 module.exports = {
+    target: "web",
     entry: {
         mylib: path.resolve(__dirname, 'src/ts/index.ts'),
-        // "@helpers": path.resolve(__dirname, '../../../../../lib/helpers')
     },
     module: {
         rules: [
@@ -23,7 +23,8 @@ module.exports = {
         extensions: ['.ts', '.js'],
         alias: {
             // '@lib': path.resolve(__dirname, "../../../../../../lib")
-            '@lib': path.resolve(__dirname, "D:/code/lib/helpers/")
+            // '@lib/': path.resolve(__dirname, "D:/code/lib/"),
+            '@lib/helpers': path.resolve("d:/code/lib/helpers")
         }
     },
     output: {

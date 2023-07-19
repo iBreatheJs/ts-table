@@ -1,7 +1,8 @@
+// @ts-nocheck TODOTODO
 import { Dict, RowData, Table, TableContainer, TableData, TableParams, testData } from "../..";
 // import { executeTests } from "./testContainer"
 // import { Testtt } from '../../pathTest' //todotodo: add local folder alias
-import { Test } from 'ts-test' //todotodo: add local folder alias
+// import { Test } from 'ts-test' //todotodo: add local folder alias
 var data = [
     {
         key1: "val1_1",
@@ -391,12 +392,6 @@ type TableDataCases<T> = {
     [key in keyof Required<T>]: Dict<any>;
 };
 
-type testtt = typeof containerArgDefObj
-type testtt2 = typeof argDefObj
-
-var asdf: testtt2 = {
-    container: {}
-}
 
 // todo: types: first impl for argDefObj but consider adjusting for just adding tuples of args (has no naming so this one is nicer but more work)
 function getCombinationTable<T>(...args: ArgDefObj<T>[]) {

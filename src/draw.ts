@@ -56,44 +56,44 @@ function drawTableChecks<Data extends TableData>(container: TableContainer, data
     // moved the header logic into setupOptions called in constructor
     return
 
-    // explicit request for no header, but data is provided and not empty
-    // header is created in memory for indexing cols but not drawn to DOM
-    if (table.header === false) {
-        console.log("Drawing table with no header (table.header == false).");
-        table.header = {}
-    } else if (table.header === true) {
-        table.header = {}
-    } else {
-        // only for ordered data like array. might implement that in the future but probably not worth it because 
-        // headers are found relatively fast, helpfull for indexing and can be hidden in dom
-    }
+    // // explicit request for no header, but data is provided and not empty
+    // // header is created in memory for indexing cols but not drawn to DOM
+    // if (table.header === false) {
+    //     console.log("Drawing table with no header (table.header == false).");
+    //     table.header = {}
+    // } else if (table.header === true) {
+    //     table.header = {}
+    // } else {
+    //     // only for ordered data like array. might implement that in the future but probably not worth it because 
+    //     // headers are found relatively fast, helpfull for indexing and can be hidden in dom
+    // }
 
 
-    // ----- these r more conversons than checks
+    // // ----- these r more conversons than checks
 
-    // infer table header based on unique keys in data
-    table.header = inferHeader<Data>(table.data)
-
-
+    // // infer table header based on unique keys in data
+    // table.header = inferHeader<Data>(table.data)
 
 
-    // let missing
-    // let errTmpl = `missing property ${missing} required for drawing table`
-    // if (!container) { missing = "container"; throw new Error(errTmpl); }
-    // if (!data) missing = "data"
-    // // todo: test empty and editable, test empty with dynamic data (when implementing cbd grid)
-    // if (!data) console.warn("table is drawn empty, no data was provided")
-    if (!container) {
-        console.warn("table is appended to body, no container was provided")
-        let div = document.createElement("div")
-        table.container = document.body.appendChild(div)
-    }
 
-    // todo make sure container is a htmltableelement and change tableBasic to value from config
-    container = container as HTMLTableElement
-    container.classList.add("tableBasic")
 
-    return
+    // // let missing
+    // // let errTmpl = `missing property ${missing} required for drawing table`
+    // // if (!container) { missing = "container"; throw new Error(errTmpl); }
+    // // if (!data) missing = "data"
+    // // // todo: test empty and editable, test empty with dynamic data (when implementing cbd grid)
+    // // if (!data) console.warn("table is drawn empty, no data was provided")
+    // if (!container) {
+    //     console.warn("table is appended to body, no container was provided")
+    //     let div = document.createElement("div")
+    //     table.container = document.body.appendChild(div)
+    // }
+
+    // // todo make sure container is a htmltableelement and change tableBasic to value from config
+    // container = container as HTMLTableElement
+    // container.classList.add("tableBasic")
+
+    // return
 
 
 
