@@ -47,9 +47,9 @@
     // "baseUrl": "./node_modules", /* Base directory to resolve non-absolute module names. */
     "baseUrl": ".", /* Base directory to resolve non-absolute module names. */
     "paths": {
-      // "@lib/*": [
-      //   "../../../../../lib/*"
-      // ]
+      "@lib/*": [
+        "../../../../../lib/*"
+      ]
       // "file:D:/code/lib/*", // wish that would work
       // "@lib": [
       //   "../../*"

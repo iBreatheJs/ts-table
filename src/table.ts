@@ -12,8 +12,7 @@ import {
     TableHeaderParam
 } from './types'
 
-import { mergeObjects } from '@lib/helpers';
-// import { mergeObjects } from './helpers';
+import { mergeObjects } from "@lib/helpers";
 import { addRow, drawTable } from './draw'
 
 // import { getOrCreateContainer } from './container'
