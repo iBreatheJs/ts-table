@@ -19,7 +19,8 @@ export type RowData = Dict<ColData>
 // let data22 = [1,"dsdf", true]
 
 
-export type TableData = RowData[] | Dict<RowData>;
+export type TableData = RowData[]
+// | Dict<RowData>; makes no sense think i meant to have rowdata be an arr
 
 
 
@@ -27,10 +28,10 @@ let data: TableData = [
     { col1: "val1" },
     { col2: "val2" }
 ]
-let data2: TableData = {
-    asfd: { col1: "val1" },
-    asdf2: { col2: "val2" }
-}
+// let data2: TableData = {
+//     asfd: { col1: "val1" },
+//     asdf2: { col2: "val2" }
+// }
 
 let data3 = [
     ["r1col1", "r1col2"],
@@ -106,7 +107,7 @@ export type TableHeaderParam =
     | false // infer,hide=true
 
 
-export interface TableParams<T extends TableData> {
+export type TableParams<T extends TableData> = {
     /**
      * optional, falls back to:
      *      create div, append to body
@@ -120,10 +121,32 @@ export interface TableParams<T extends TableData> {
      *              create element w id, append to body
      */
     container: TableContainer,
+    /**
+     * for any type use option: "extendedData"
+     *      might require custom renderer or 
+     *      not implemented: todo: nested renderer
+     */
     data: T,
+    // dataa: Required<TableParams<T>['options']>[''],
     header?: TableHeaderParam,
-    options?: TableOptions<T>
-}
+    options?: TableOptions<T> // todo better consitant naming for the param and internal version. would make sense to call them all sthParam and have another type in the cls with default values and less optional... but these names r likely the one exported for anotation outside when using the lib.. so better call them tableOptions and the instance one sth else
+} & { // change data type if extendedData is used
+    data: T
+    options?: {
+        extendedData?: boolean,
+    }
+} |
+    {
+        container: TableContainer,
+        header?: TableHeaderParam,
+        options?: TableOptions<T> // todo better consitant naming for the param and internal version. would make sense to call them all sthParam and have another type in the cls with default values and less optional... but these names r likely the one exported for anotation outside when using the lib.. so better call them tableOptions and the instance one sth else
+    } &
+    {
+        data: any
+        options: {
+            extendedData: true,
+        }
+    }
 
 // used for callback functions to hint the correct index type
 export type KeyOrIndex<data> = data extends Array<RowData> ? number : string;
@@ -149,17 +172,30 @@ export interface TableHeaderParamOptions {
     infer?: boolean // default false, except no table header
 }
 
+export type RenderRow<Data extends TableData> = (table: Table<Data>, idx: number) => void
+export type RenderColContent<Data extends TableData> = (table: Table<Data>, pos: [number, string], cell: HTMLTableCellElement) => void
+
 /**
  * optional table Params
  * TODO: document params
  */
 export interface TableOptions1<Data extends TableData> {
     header?: TableHeaderParamOptions
+    /**
+     * allow for complex data structures, objects / arrays as ColData
+     */
+    extendedData?: boolean
     // edit?: edit
     tableStyle?: Dict<Dict<string>>,
     alternateColour?: boolean //default true
     // todo: these fk up the call method used for passing this context
     // transformData?: RowFunc<Data>,
+    render?: {
+        row?: RenderRow<Data> // row html frame that calls rowContnent
+        // rowContent?: RenderRow<Data> //todo this is sth,,, data inside eg. table cell
+        // col?: Function
+        colContent?: RenderColContent<Data>
+    }
     // rowFunc?: RowFunc<Data>,
     // collapsible?: CollapsibleRowFunc<Data>,
     sortable?: { // TODO: add 3rd value to header that is used for sorting, eg. for time: display simple date format but calc with unix time stamp

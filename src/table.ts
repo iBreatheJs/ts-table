@@ -13,7 +13,7 @@ import {
 } from './types'
 
 import { mergeObjects } from "@lib/helpers";
-import { addRow, drawTable } from './draw'
+import { renderRowHtmlTable, drawTable } from './draw'
 
 // import { getOrCreateContainer } from './container'
 // import { table } from 'console';
@@ -23,7 +23,9 @@ interface TableConstructor<Data extends TableData> {
     new(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data>): Table<Data>
 }
 
-interface TableOptionsReq<Data extends TableData> {
+type TableOptionsReq<Data extends TableData> = TableOptions<Data> &
+// interface TableOptionsReq<Data extends TableData> 
+{
     header: {
         infer: boolean,
         hide: boolean
@@ -71,7 +73,7 @@ export class Table<Data extends TableData>{
     public tableHtml: HTMLTableElement
     public header: TableHeader;
     // private _data: Data;
-    public options: TableOptions<Data> & TableOptionsReq<Data>
+    public options: TableOptionsReq<Data>
 
     // private tableStyle: Dict<Dict<string>>;
     // private filterConfig: FilterConfig | null
@@ -106,13 +108,14 @@ export class Table<Data extends TableData>{
         // init with obj of params - first arg is params
         // Only checks for obj type with manditory data property. 
         // Not boolean is asserted in else... constructor overloads enforce it but ts cant infer that unfortunatelly.
-        if (this.argIsObject(containerOrParams)) {
+        if (this.argIsObject<Data>(containerOrParams)) {
             let params = containerOrParams
 
             this.container = params.container
             this.data = params.data
 
             this.header = params.header || {}
+            // if (options)
             this.options = this.setupOptions(params.options, params.header)
         } else { // init with multiple params -  first arg is container
             // assert because based on constructors and argIsObject type guard there is no ambiguity
@@ -129,7 +132,7 @@ export class Table<Data extends TableData>{
         }
         this.eventConfig = this.options?.eventConfig ?? {}
 
-
+        this.data
         this.tableHtml = this.draw()
 
         // const uniqueKeys = [...new Set(asdf.map((item) => Object.keys(item)))]; // [ 'A', 'B']
@@ -138,7 +141,7 @@ export class Table<Data extends TableData>{
             "add-row": {
                 //maybe no need for args her...
                 // args: this.eventConfig.setArgs,
-                fn: this.addRow
+                fn: this.renderRowHtmlTable
             },
             "sort": {
                 // args: this.eventConfig.setArgs,
@@ -156,7 +159,7 @@ export class Table<Data extends TableData>{
         console.log("setup headerr");
         console.log(header);
 
-        const TableOptions: TableOptions<Data> & TableOptionsReq<Data> = {
+        const TableOptions: TableOptionsReq<Data> = {
             header: {
                 infer: typeof header === "object" ? false : true, // set depending on header
                 hide: header === false ? true : false
@@ -205,7 +208,7 @@ export class Table<Data extends TableData>{
         //     };
         // }
 
-        return opt as TableOptions<Data> & TableOptionsReq<Data>
+        return opt as TableOptionsReq<Data>
         // if (options) this.options = { ...TableOptions}
     }
 
@@ -213,6 +216,7 @@ export class Table<Data extends TableData>{
     // https://github.com/microsoft/TypeScript/issues/26916
     // argIsObject2<Data extends TableData>(): this is {containerOrParams: TableParams<Data>} & {data: Data} {
     // argIsObject2<Data extends TableData>(asdf: any): asdf is object & { containerOrParam: string, data: number } {
+    // argIsObject<Data extends TableData>(containerOrParams: any): containerOrParams is TableParams<Data> {
     argIsObject<Data extends TableData>(containerOrParams: any): containerOrParams is TableParams<Data> {
         return containerOrParams && containerOrParams.data ? true : false;
     }
@@ -239,7 +243,7 @@ export class Table<Data extends TableData>{
     }
 
     draw = (): HTMLTableElement => drawTable(this)
-    addRow = (table: Table<Data>, row: RowData) => addRow(table, row)
+    renderRowHtmlTable = (table: Table<Data>, row: number) => renderRowHtmlTable(table, row)
     sort = (event: Event, n: number) => {
         console.error("not implemented")
         console.log(event);

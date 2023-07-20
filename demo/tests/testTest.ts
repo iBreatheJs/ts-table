@@ -1,5 +1,4 @@
-// @ts-nocheck TODOTODO
-import { Dict, RowData, Table, TableContainer, TableData, TableParams, testData } from "../..";
+import { Dict, RenderColContent, RowData, Table, TableContainer, TableData, TableOptions1, TableParams, testData } from "../..";
 // import { executeTests } from "./testContainer"
 // import { Testtt } from '../../pathTest' //todotodo: add local folder alias
 // import { Test } from 'ts-test' //todotodo: add local folder alias
@@ -398,7 +397,7 @@ function getCombinationTable<T>(...args: ArgDefObj<T>[]) {
     //todo more argDefs
     if (args.length < 1) throw new Error("No args provided for generating combinations")
 
-    let tableData: {}[] = []
+    let tableData: TableData = []
 
     if (args.length === 1) { //todo: check somehow to exclude tuple option here
         // object / tuple - one big object used to construct / or just provided one arg
@@ -466,6 +465,45 @@ function getCombinationTable<T>(...args: ArgDefObj<T>[]) {
     return tableData
 }
 
+function customRodwRenderer<d extends TableData>(table, data): Required<TableOptions1<d>>['render']['row'] {
+    // Implement your custom row rendering logic here
+    return (table, data) => {
+        // Your custom implementation
+    };
+}
+
+
+// let customRowRenderer = (): Required<TableOptions1<d>>['render']['row'] => { }
+let customRowRenderer: Required<TableOptions1<d>>['render']['row'] = (table, rowData) => {
+    if (data.container === "sd") {
+        // customColRenderer()
+    } else {
+        table.renderRowHtmlTable(table, rowData)
+    }
+}
+// function renderColCustom<Data extends TableData>(): RenderColContent<Data> {
+
+function renderColCustom<Data extends TableData>(table: Table<Data>, idx: [number, string], cell: HTMLTableCellElement) { // i want the same thing but as a type
+    let data = table.data[idx[0]][idx[1]]
+    if (idx[1] == "rows") {
+        console.log("idx[1]");
+        console.log(data);
+        cell.innerText = data.err + "\n" + data.msg;
+    } else {
+        let text = document.createTextNode(String(
+            data
+        ));
+        cell.appendChild(text);
+    }
+}
+// tsbs generic function types
+// export type RenderColContent<Data extends TableData> = (table: Table<Data>, pos: [number, string], cell: HTMLTableCellElement) => void
+// let renderColCustom: RenderColContent<T> = (asdf) => { // T is undefined
+// }
+// function createRenderColCustom<T extends TableData>(asdf): RenderColContent<T> { // cant add args here how i want it
+//     return (table, pos, cell) => { // but here they r defined but to have to do this is probably more shitty than defining it all like in the first one
+//     };
+// }
 
 export function test22() {
     console.log("test22");
@@ -483,7 +521,7 @@ export function test22() {
 
     // let comb = getCombinationTable(containerArgDefObj, dataArgDef) // multiple params
     // let comb = getCombinationTable(argDefObj, testsTable) also needs to be combined with each test, actually could just be cols
-    let comb = getCombinationTable(argDefObj) // one obj
+    let comb: Dict<unknown>[] = getCombinationTable(argDefObj) // one obj
 
     comb.forEach((row, i, arr) => {
         let res = executeTests(testsTable)
@@ -492,14 +530,20 @@ export function test22() {
 
     console.log("comb");
     console.log(comb);
+
     let t = new Table({
         container: d,
         data: comb,
         header: { sth: "sth" },
         options: {
+            extendedData: true,
             header: {
                 infer: true
                 // hide: true
+            },
+            render: {
+                // row: customRowRenderer()
+                // colContent: renderColCustom
             }
         }
     })

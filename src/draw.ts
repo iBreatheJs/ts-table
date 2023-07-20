@@ -271,28 +271,26 @@ function drawTableHeader<Data extends TableData>(header: TableHeader, container:
 function drawTableBody<Data extends TableData>(table: Table<Data>, container: HTMLTableElement) {
     console.log("drawtable body");
     console.log(table.header);
-
-
     // TABLE
 
     // check data structure
-    if (!Array.isArray(table.data)) {
-        throw new Error("todo: for now only use array and transform array, reevaluate if it makes sense to deal w other data structures")
-    }
-    var dataIsArray = Array.isArray(table.data)
+    // if (!Array.isArray(table.data)) {
+    //     throw new Error("todo: for now only use array and transform array, reevaluate if it makes sense to deal w other data structures")
+    // }
+    // var dataIsArray = Array.isArray(table.data)
     // array verson:
     // let tbody = container.createTBody();
 
     // // TODO: check this here y did i not put it in the function??
     // // for in returns key (and also Array index) as string
     // for (let row in this.data) {
-    //     this.addRow(tbody, row)
+    //     this.renderRowHtmlTable(tbody, row)
     // }
 
     // // add row
     // if (this.options?.extendableRows) {
     //     let tbody = container.createTBody();
-    //     this.addRow(tbody, "header")
+    //     this.renderRowHtmlTable(tbody, "header")
     // }
     // // filter box for this table
     // if (filterRow) {
@@ -301,20 +299,21 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
     // // TODO: when is this used? while buildigng sdlfjs;fdl
     // this.initialized = true
     // this.changeColourEvenRows()
+    // var keyOrIndex: number | string
 
 
 
-    var keyOrIndex: number | string
 
     let tbody = container.createTBody();
     table.container = table.container as HTMLTableElement
     table.container.appendChild(tbody)
-
-
-    for (let row of table.data) {
-        table.addRow(table, row)
-    }
-
+    if (table.data)
+        for (let row = 0; row < table.data.length; row++) {
+            if (table.options.render?.row) {
+                table.options.render?.row(table, row)
+            }
+            else table.renderRowHtmlTable(table, row)
+        }
 
 
 
@@ -327,13 +326,13 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
     //     // TODO document in md
     //     // if (isArray(this.data)) keyOrIndex = +keyOrIndex; //!!!!
 
-    //     this.addRow(this, row)
+    //     this.renderRowHtmlTable(this, row)
     // }
 
     // // add row
     // if (this.options.extendableRows) {
     //     let tbody = container.createTBody();
-    //     this.addRow(tbody, "header")
+    //     this.renderRowHtmlTable(tbody, "header")
     // }
     // // filter box for this table
     // if (filterRow) {
@@ -345,26 +344,40 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
 
 
 }
+type NestedCellData = ColData | Dict<NestedCellData>
 
+// nestedData type is ColData | Dict with colData but unknown lvl of nesting... some recursive dict or sth, idk
+function renderCellHtmlTable<Data extends TableData>(table: Table<Data>, idx: [number, string], cell: HTMLTableCellElement, nestedData?: NestedCellData) {
+    let data = nestedData || table.data[idx[0]][idx[1]]
+    if (typeof data === "object" && data != null) {
 
+        console.log("object col");
 
-// export function addRow<Data extends TableData>(table: Table<Data>, keyOrIndex: string | number | "header") {
-export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowData) {
-    // console.log("add row");
+        for (let key in data) {
+            let innerCell = document.createElement("td")
+            cell.appendChild(innerCell)
+            renderCellHtmlTable(table, idx, innerCell, data[key])
+        }
+    } else {
+        let text = document.createTextNode(String(data));
+        cell.appendChild(text);
+    }
+}
 
+// export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, keyOrIndex: string | number | "header") {
+export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, rowIdx: number) {
     let row = document.createElement("tr");
     let tableHtml = table.container as HTMLTableElement
     let tbody = tableHtml.tBodies[0]
 
     // transform row data, called for each row TODO: that good here or call once and set all
-    //todo
+    // //  todo:
     // if (table.options?.transformData) {
     //     table.transformData(row, keyOrIndex as KeyOrIndex<Data>)
     //     // this.options.transformData(row, keyOrIndex as KeyOrIndex<Data>, this.tableData, this)
     // }
 
     // generate columns
-
 
     // if (!table.header) {
 
@@ -378,31 +391,11 @@ export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowD
 
     // }
 
-    // todo: at this time header should be defined. maybe assert to avoid this check every time
-    if (typeof table.header == "boolean") {
-        throw new Error("tried to add row to table with invalid header");
-    }
+
     for (const col in table.header) {
+        let value = table.data[rowIdx][col];
 
-        let value: ColData;
         let cell = document.createElement("td");
-
-        // if (keyOrIndex == "header") {
-        //     value = col
-
-
-
-        // } else {
-        //     // @ts-ignore
-        //     // for-in and Object.Keys return elements as string, 
-        //     // if Array its certenly a number; if Dict its definitely a string
-        //     // nice and easy js solution:
-        //     // 
-        //     // keyTableData is a special col that is associated with the key of the object that contains the rest of the cols as values
-        //     // value = col == 'keyTableData' ? keyOrIndex : this.tableData[keyOrIndex][col];
-        // }
-        value = rowData[col];
-
 
         // TODO: Test performance difference with concated string 
         // also create rows first then render in one go, createElement for cols instead of insertCell already makes a difference
@@ -424,8 +417,10 @@ export function addRow<Data extends TableData>(table: Table<Data>, rowData: RowD
         //     // cell.addEventListener('input', (el: any) => this.onEdit(el))
         // }
 
-        let text = document.createTextNode(String(value));
-        cell.appendChild(text);
+        if (table.options.render?.colContent)
+            table.options.render.colContent(table, [rowIdx, col], cell)
+        else
+            renderCellHtmlTable(table, [rowIdx, col], cell,)
         row.appendChild(cell)
     }
     // add row to table body
