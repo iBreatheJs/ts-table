@@ -48,7 +48,8 @@
     "baseUrl": ".", /* Base directory to resolve non-absolute module names. */
     "paths": {
       "@lib/*": [
-        "../../../../../../lib/*",
+        "../../*",
+        // "../../../../../../lib/*",
         // "D:/code/lib/*", // wish that   would work - doesnt work in vscode idk about wp
       ]
     }, /* A series of entries which re-map imports to lookup locations relative to the 'baseUrl'. */
@@ -58,9 +59,9 @@
     // ],                             /* List of folders to include type definitions from. */
     "types": [
       "node",
-      "jest",
-      "@types/jest-expect-message",
-      "../../../../../../lib/helpers",
+      // "jest",
+      // "@types/jest-expect-message",
+      // "../../../../../../lib/helpers",
     ], /* Type declaration files to be included in compilation. */
     // "allowSyntheticDefaultImports": true,        /* Allow default imports from modules with no default export. This does not affect code emit, just typechecking. */
     "esModuleInterop": true /* Enables emit interoperability between CommonJS and ES Modules via creation of namespace objects for all imports. Implies 'allowSyntheticDefaultImports'. */,

@@ -1,6 +1,6 @@
 const webpack = require('webpack')
 const path = require('path')
-const DeclarationBundlerPlugin = require('./declaration-bundler-webpack-plugin.fix')
+// const DeclarationBundlerPlugin = require('./declaration-bundler-webpack-plugin.fix')
 // const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
 // const TerserPlugin = require("terser-webpack-plugin");
 
@@ -23,8 +23,9 @@ module.exports = {
         extensions: ['.ts', '.js'],
         alias: {
             // '@lib': path.resolve(__dirname, "../../../../../../lib")
-            // '@lib/': path.resolve(__dirname, "D:/code/lib/"),
-            '@lib/helpers': path.resolve("d:/code/lib/helpers")
+            '@lib/helpers': path.resolve("d:/code/lib/helpers"),
+            '@lib/ts-test': path.resolve("d:/code/lib/ts-test"),
+            '@lib/ts-table': path.resolve("d:/code/lib/ts-table"),
         }
     },
     output: {
