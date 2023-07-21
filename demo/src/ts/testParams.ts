@@ -80,6 +80,14 @@ export function testParamCombinations() {
     }
 
 
-    let t = new Test({ argDef: argDefObj })
-
+    let t = new Test({
+        argDefObj: argDefObj,
+        tests: testsTable,
+        setup: (document) => {
+            let div = document.createElement("div")
+            div.id = "testDiv"
+            document.body.appendChild(div)
+        }
+    })
+    t.testParamsCartesian()
 }

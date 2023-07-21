@@ -348,12 +348,12 @@ type NestedCellData = ColData | Dict<NestedCellData>
 
 // nestedData type is ColData | Dict with colData but unknown lvl of nesting... some recursive dict or sth, idk
 function renderCellHtmlTable<Data extends TableData>(table: Table<Data>, idx: [number, string], cell: HTMLTableCellElement, nestedData?: NestedCellData) {
-    let data = nestedData || table.data[idx[0]][idx[1]]
+    let data = nestedData === undefined ? table.data[idx[0]][idx[1]] : nestedData
     if (typeof data === "object" && data != null) {
-
-        console.log("object col");
-
         for (let key in data) {
+            console.log(key);
+            console.log(data[key]);
+
             let innerCell = document.createElement("td")
             cell.appendChild(innerCell)
             renderCellHtmlTable(table, idx, innerCell, data[key])
@@ -393,6 +393,9 @@ export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, r
 
 
     for (const col in table.header) {
+        console.log("col tableheader");
+        console.log(col);
+
         let value = table.data[rowIdx][col];
 
         let cell = document.createElement("td");
@@ -417,12 +420,17 @@ export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, r
         //     // cell.addEventListener('input', (el: any) => this.onEdit(el))
         // }
 
-        if (table.options.render?.colContent)
-            table.options.render.colContent(table, [rowIdx, col], cell)
-        else
-            renderCellHtmlTable(table, [rowIdx, col], cell,)
+        // if (table.options.render?.colContent)
+        //     table.options.render.colContent(table, [rowIdx, col], cell)
+        // else
+        renderCellHtmlTable(table, [rowIdx, col], cell)
         row.appendChild(cell)
+        console.log("idk");
+
     }
+    console.log("row");
+    console.log(row);
+
     // add row to table body
     tbody.appendChild(row)
     // this.tableHtml.tBodies[0].appendChild(row)
