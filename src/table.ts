@@ -132,7 +132,7 @@ export class Table<Data extends TableData>{
         }
         this.eventConfig = this.options?.eventConfig ?? {}
 
-        this.tableHtml = this.draw()
+        // this.tableHtml = this.draw()
 
         // const uniqueKeys = [...new Set(asdf.map((item) => Object.keys(item)))]; // [ 'A', 'B']
         // console.log(uniqueKeys);

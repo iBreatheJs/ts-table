@@ -1,4 +1,4 @@
-import { Dict, TableData, TableParams, testData } from "@lib/ts-table";
+import { Dict, Table, TableData, TableParams, testData } from "@lib/ts-table";
 import { ArgDefObj, Test, TestDefinitions } from "@lib/ts-test";
 
 const variableHtmlElement = (tag: keyof HTMLElementTagNameMap) => {
@@ -9,16 +9,16 @@ const variableHtmlElement = (tag: keyof HTMLElementTagNameMap) => {
     }
 }
 export function testParamCombinations() {
-    var testsTable: TestDefinitions = {
+    var testsTable: TestDefinitions<typeof Table> = {
         tagName: {
-            test: (testFrame: HTMLIFrameElement) => {
+            test: (testFrame: Document) => {
                 // testFrame.getel
                 return "t.tableHtml.tagName"
             },
             expect: "TABLE"
         },
         parentTagName: {
-            test: (testFrame: HTMLIFrameElement) => { return "testFrame.tableHtml.parentElement?.tagName" },
+            test: (testFrame: Document) => { return "testFrame.tableHtml.parentElement?.tagName" },
             expect: "div"
         },
         rows: {
@@ -31,6 +31,12 @@ export function testParamCombinations() {
         "undefined": undefined,
         "sd": "sdf",
         "null": null,
+        // "table": () => { document.body.appendChild(document.createElement("table")) },
+        "table": () => {
+            let t = document.createElement("table");
+            document.body.appendChild(t)
+            t.classList.add("fkntable")
+        },
         combination: () => {
             console.log("combi");
         },
@@ -48,8 +54,8 @@ export function testParamCombinations() {
     let dataArgDef =
     {
         // "test": { "asdf": "asdff" },
-        "simple data": testData.simple,
-        "crypto data": testData.crypto,
+        "simple data": testData.simple.data,
+        "crypto data": testData.crypto.data,
     }
     // {
     //     arg: testData.simple,
@@ -83,6 +89,7 @@ export function testParamCombinations() {
     let t = new Test({
         argDefObj: argDefObj,
         tests: testsTable,
+        testSubject: Table,
         setup: (document) => {
             let div = document.createElement("div")
             div.id = "testDiv"

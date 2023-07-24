@@ -1,3 +1,4 @@
+// @ts-nocheck
 // todo: clean up
 // import { Table } from '../../../src/table'
 // import { Dict, EventConfig, SetArgsT, SortSig, TableData, TableOptions, TableParams } from '../../../src/types'
@@ -77,8 +78,8 @@ import { Test } from "@lib/ts-test";
 } */
 
 function inputTests() {
-    // testTest()
-    test22()
+  // testTest()
+  test22()
 }
 
 // function basic() {

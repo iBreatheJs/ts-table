@@ -347,17 +347,34 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
 type NestedCellData = ColData | Dict<NestedCellData>
 
 // nestedData type is ColData | Dict with colData but unknown lvl of nesting... some recursive dict or sth, idk
-function renderCellHtmlTable<Data extends TableData>(table: Table<Data>, idx: [number, string], cell: HTMLTableCellElement, nestedData?: NestedCellData) {
+// useNestedData in case the value should be undefined
+function renderCellHtmlTable<Data extends TableData>(table: Table<Data>, idx: [number, string], cell: HTMLTableCellElement, nestedData?: NestedCellData, useNestedData: boolean = false) {
     let data = nestedData === undefined ? table.data[idx[0]][idx[1]] : nestedData
+    // let data = !useNestedData ? table.data[idx[0]][idx[1]] : nestedData
     if (typeof data === "object" && data != null) {
+        console.log("data rendercell");
+        console.log(data);
+
+        // arr / tuple type:
+        // if (Array.isArray(data)) {
+        //     console.log("isArray");
+        //     for (let val of data) {
+        //         console.log(val);
+
+        //         let innerCell = document.createElement("td")
+        //         cell.appendChild(innerCell)
+        //         renderCellHtmlTable(table, idx, innerCell, val, true)
+        //     }
+
+        // }
+        // else {
         for (let key in data) {
-            console.log(key);
-            console.log(data[key]);
 
             let innerCell = document.createElement("td")
             cell.appendChild(innerCell)
             renderCellHtmlTable(table, idx, innerCell, data[key])
         }
+        // }
     } else {
         let text = document.createTextNode(String(data));
         cell.appendChild(text);
@@ -393,9 +410,6 @@ export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, r
 
 
     for (const col in table.header) {
-        console.log("col tableheader");
-        console.log(col);
-
         let value = table.data[rowIdx][col];
 
         let cell = document.createElement("td");
@@ -425,11 +439,7 @@ export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, r
         // else
         renderCellHtmlTable(table, [rowIdx, col], cell)
         row.appendChild(cell)
-        console.log("idk");
-
     }
-    console.log("row");
-    console.log(row);
 
     // add row to table body
     tbody.appendChild(row)
