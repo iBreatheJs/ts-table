@@ -26,6 +26,7 @@ module.exports = {
             '@lib/helpers': path.resolve("d:/code/lib/helpers"),
             '@lib/ts-test': path.resolve("d:/code/lib/ts-test"),
             '@lib/ts-table': path.resolve("d:/code/lib/ts-table"),
+            '@lib/ts-options': path.resolve("d:/code/lib/ts-options"),
         }
     },
     output: {

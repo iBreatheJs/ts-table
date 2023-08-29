@@ -13,6 +13,7 @@ import {
 } from './types'
 
 import { mergeObjects } from "@lib/helpers";
+// import { TsOptions } from "@lib/ts-options"; // todo: should be in cdb wrapper. for standalone table have to figure sth out bc it cant be an option or it could be removed without possibility of getting it back
 import { renderRowHtmlTable, drawTable } from './draw'
 
 // import { getOrCreateContainer } from './container'
@@ -105,6 +106,9 @@ export class Table<Data extends TableData>{
     constructor(params: TableParams<Data>);
     constructor(container: TableContainer, data: Data, header?: TableHeaderParam, options?: TableOptions<Data>);
     constructor(containerOrParams: TableContainer | TableParams<Data>, data: Data | boolean = false, header?: TableHeaderParam, options?: TableOptions<Data>) {
+        // let tso = new TsOptions()
+        // console.log("tso parse");
+        // tso.parse()
         // init with obj of params - first arg is params
         // Only checks for obj type with manditory data property. 
         // Not boolean is asserted in else... constructor overloads enforce it but ts cant infer that unfortunatelly.

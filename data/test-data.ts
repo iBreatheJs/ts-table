@@ -13,6 +13,15 @@ const simple = {
     container: container,
     header: { col1: "col1", col2: "col2", col3: "col3" }
 }
+const simpleNoUndefined = {
+    data: [
+        { col1: "data1", col2: "r1c2" },
+        { col1: "data2", col2: "r2c2" },
+        { col1: "data33333", col2: "r3c2" }
+    ],
+    container: container,
+    header: { col1: "col1", col2: "col2", col3: "col3" }
+}
 
 const crypto = {
     data: cryptoData,
@@ -23,5 +32,6 @@ const crypto = {
 // all test data
 export const testData = {
     simple: simple,
+    simpleNoUndefined: simpleNoUndefined,
     crypto: crypto
 }
