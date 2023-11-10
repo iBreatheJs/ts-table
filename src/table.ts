@@ -9,12 +9,13 @@ import {
     EventConfig,
     // Actions,
     ActionConfig,
-    TableHeaderParam
+    TableHeaderParam,
+    TableDataExtended
 } from './types'
 
 import { mergeObjects } from "@lib/helpers";
 // import { TsOptions } from "@lib/ts-options"; // todo: should be in cdb wrapper. for standalone table have to figure sth out bc it cant be an option or it could be removed without possibility of getting it back
-import { renderRowHtmlTable, drawTable } from './draw'
+import { renderRowHtmlTable, drawTable, renderCellHtmlTable } from './draw'
 
 // import { getOrCreateContainer } from './container'
 // import { table } from 'console';
@@ -41,15 +42,32 @@ function isParams<Data extends TableData>(obj: any): obj is TableParams<Data> {
 // interface TableConstructor<Data extends TableData> {
 //     new ( container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> ): Table<Data> | (new (asdf:string):any) 
 // }
+
+/**
+ * If T is true: type is TypeTrue  
+ * If T is not true: type is TypeFalse  
+ * 
+ * might need to add null
+ */
+type IfTrue<T extends boolean | undefined, TypeTrue, TypeFalse> = T extends true ? TypeTrue : TypeFalse
 export class Table<Data extends TableData>{
     static tablesInstCnt: number = 0 // Number of Tables instantiated
     static tablesActiveCnt: number = 0 // Number of currently existing Table Instances
 
     public container: TableContainer
     // public container: HTMLTableElement;
-    private _data: Data = {} as Data;
+    // private _data: Data = {} as Data;
 
-    public set data(val: Data) {
+    // private _data: Data | TableDataExtended
+
+    // todo: narrow data from `Data | TableDataExtended`, guess i ll have to add a generic or maybe some kind of discriminated unions but dont think that works for class props 
+    // public _data: T extends string ? string : number;
+
+    public _data: IfTrue<typeof this.options.extendedData, Data, TableDataExtended>
+    // type asdf = typeof this.options.extendedData extends true ? TableDataExtended : Data
+
+
+    public set data(val: IfTrue<typeof this.options.extendedData, Data, TableDataExtended>) {
         // there is already data:
         if (this._data && this._data.length > 0) {
             console.warn("data alredy set. todo: probably just create a new table / overwrite everything in table w new data if already been drawn");
@@ -67,7 +85,7 @@ export class Table<Data extends TableData>{
         }
     }
 
-    public get data(): Data {
+    public get data(): IfTrue<typeof this.options.extendedData, Data, TableDataExtended> {
         return this._data;
     }
 
@@ -81,11 +99,9 @@ export class Table<Data extends TableData>{
     // public initialized: boolean;
 
     // private searchHtml: HTMLInputElement | null;
-    // private rowCntHtml: HTMLDivElement | null;
+    public rowCntHtml: HTMLDivElement | null = null
     public eventConfig: EventConfig
     public actions;
-
-    // 
 
 
     /**
@@ -104,39 +120,42 @@ export class Table<Data extends TableData>{
 
 
     constructor(params: TableParams<Data>);
-    constructor(container: TableContainer, data: Data, header?: TableHeaderParam, options?: TableOptions<Data>);
-    constructor(containerOrParams: TableContainer | TableParams<Data>, data: Data | boolean = false, header?: TableHeaderParam, options?: TableOptions<Data>) {
-        // let tso = new TsOptions()
-        // console.log("tso parse");
-        // tso.parse()
+    // constructor(container: TableContainer, data: Data, header?: TableHeaderParam, options?: TableOptions<Data>);
+    constructor(container: TableParams<Data>["container"], data: TableParams<Data>["data"], header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]);
+    constructor(containerOrParams: TableParams<Data>["container"] | TableParams<Data>, data: Data | boolean = false, header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]) {
+        let cl = console.log
         // init with obj of params - first arg is params
         // Only checks for obj type with manditory data property. 
         // Not boolean is asserted in else... constructor overloads enforce it but ts cant infer that unfortunatelly.
         if (this.argIsObject<Data>(containerOrParams)) {
             let params = containerOrParams
+            if (params.options?.silent) console.log = () => { }
 
             this.container = params.container
-            this.data = params.data
+            this._data = params.data
 
             this.header = params.header || {}
-            // if (options)
             this.options = this.setupOptions(params.options, params.header)
         } else { // init with multiple params -  first arg is container
+            if (options?.silent) console.log = () => { }
             // assert because based on constructors and argIsObject type guard there is no ambiguity
             containerOrParams = containerOrParams as TableContainer
-            data = data as Data
+            this._data = data as Data
             // todo: might do some runtime data validation tho
             // no data and no header cant work todo
 
             this.container = containerOrParams
-            this.data = data;
 
             this.header = header || {}
             this.options = this.setupOptions(options, header)
         }
         this.eventConfig = this.options?.eventConfig ?? {}
 
-        // this.tableHtml = this.draw()
+        this.tableHtml = this.draw()
+
+        console.log("table constructedddd");
+        console.log(this.options);
+
 
         // const uniqueKeys = [...new Set(asdf.map((item) => Object.keys(item)))]; // [ 'A', 'B']
         // console.log(uniqueKeys);
@@ -152,8 +171,15 @@ export class Table<Data extends TableData>{
                 fn: this.sort
             }
         }
+
+        if (this.options.silent) console.log = cl
     }
 
+    /**
+     * provide default options.
+     *      some options default values are dependent on mandatory or other opt params.
+     *      otherwise they would fuck the cls if not adjusted 
+     */
     setupOptions(options?: TableOptions<Data>, header?: TableHeaderParam) {
         /**
          * default options
@@ -161,6 +187,7 @@ export class Table<Data extends TableData>{
          */
         console.log("setup headerr");
         console.log(header);
+
 
         const TableOptions: TableOptionsReq<Data> = {
             header: {
@@ -246,6 +273,9 @@ export class Table<Data extends TableData>{
     }
 
     draw = (): HTMLTableElement => drawTable(this)
+    render = {
+        renderCellDefault: renderCellHtmlTable
+    }
     renderRowHtmlTable = (table: Table<Data>, row: number) => renderRowHtmlTable(table, row)
     sort = (event: Event, n: number) => {
         console.error("not implemented")

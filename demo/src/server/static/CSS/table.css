@@ -98,3 +98,15 @@ table {
   /* background-color: rgb(195, 255, 195); */
   text-align: center;
 }
+
+/* ts-options */
+.ts-options-box {
+  width: 100;
+}
+
+.ts-options-option {
+  border-width: 2px;
+  border-style: solid;
+  border-color: black;
+  background-color: #c0a4ff;
+}

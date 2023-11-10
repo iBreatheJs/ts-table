@@ -9,6 +9,8 @@ const variableHtmlElement = (tag: keyof HTMLElementTagNameMap) => {
     }
 }
 export function testParamCombinations() {
+    console.log("testParamCombinations");
+
     var testsTable: TestDefinitions<typeof Table> = {
         tagName: {
             test: (testFrame: Document) => {

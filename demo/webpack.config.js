@@ -1,5 +1,6 @@
-const webpack = require('webpack')
+// const webpack = require('webpack')
 const path = require('path')
+
 // const DeclarationBundlerPlugin = require('./declaration-bundler-webpack-plugin.fix')
 // const UglifyJSPlugin = require('uglifyjs-webpack-plugin')
 // const TerserPlugin = require("terser-webpack-plugin");

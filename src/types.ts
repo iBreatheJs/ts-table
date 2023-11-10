@@ -14,12 +14,14 @@ export type ColData = number | string | boolean | undefined
 // could have different implementation for drawing, but if u dont do it all in one go which is unnecessary complicated only have to iterate once before to get unique keys 
 // ... and for drawing use the key lookup impl, or eventually array impl
 export type RowData = Dict<ColData>
+export type RowDataExtended = Dict<ColData | Dict<any> | Array<any>>
 // obj format is nice because no order and empty fields
 // export type RowData2 = Data2[]
 // let data22 = [1,"dsdf", true]
 
 
 export type TableData = RowData[]
+export type TableDataExtended = RowDataExtended[]
 // | Dict<RowData>; makes no sense think i meant to have rowdata be an arr
 
 
@@ -44,7 +46,7 @@ let container = "" as unknown as HTMLTableElement
 //pretty fkd concept here n probably will fk me when debuging, just know this logs some stuff when types r imported
 // let cl = console.log
 // console.log = () => { }
-let table = new Table(container, data)
+// let table = new Table(container, data) // todo: idk what i used that for, ah.. think for some typeof type
 // console.log = cl
 
 type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P extends Table<infer X> ? X : P : never;
@@ -126,27 +128,29 @@ export type TableParams<T extends TableData> = {
      *      might require custom renderer or 
      *      not implemented: todo: nested renderer
      */
-    data: T,
+    // data: T,
     // dataa: Required<TableParams<T>['options']>[''],
     header?: TableHeaderParam,
     options?: TableOptions<T> // todo better consitant naming for the param and internal version. would make sense to call them all sthParam and have another type in the cls with default values and less optional... but these names r likely the one exported for anotation outside when using the lib.. so better call them tableOptions and the instance one sth else
-} & { // change data type if extendedData is used
-    data: T
-    options?: {
-        extendedData?: boolean,
+} &
+    ({ // change data type if extendedData is used
+        data: T
+        options?: {
+            extendedData?: boolean,
+        }
     }
-} |
+        |
+    // {
+    //     container: TableContainer,
+    //     header?: TableHeaderParam,
+    //     options?: TableOptions<T> // todo better consitant naming for the param and internal version. would make sense to call them all sthParam and have another type in the cls with default values and less optional... but these names r likely the one exported for anotation outside when using the lib.. so better call them tableOptions and the instance one sth else
+    // } &
     {
-        container: TableContainer,
-        header?: TableHeaderParam,
-        options?: TableOptions<T> // todo better consitant naming for the param and internal version. would make sense to call them all sthParam and have another type in the cls with default values and less optional... but these names r likely the one exported for anotation outside when using the lib.. so better call them tableOptions and the instance one sth else
-    } &
-    {
-        data: any
+        data: TableDataExtended
         options: {
             extendedData: true,
         }
-    }
+    })
 
 // used for callback functions to hint the correct index type
 export type KeyOrIndex<data> = data extends Array<RowData> ? number : string;
@@ -173,13 +177,19 @@ export interface TableHeaderParamOptions {
 }
 
 export type RenderRow<Data extends TableData> = (table: Table<Data>, idx: number) => void
-export type RenderColContent<Data extends TableData> = (table: Table<Data>, pos: [number, string], cell: HTMLTableCellElement) => void
+/**
+ * Renderer gets called for each cell, table, pos and cell get exposed  
+ * default renderer can be accessed and called thru table.render  
+ */
+export type RenderColContent<Data extends TableData> = (table: Table<Data>, pos: [row: number, col: string], cell: HTMLTableCellElement) => void
 
 /**
  * optional table Params
  * TODO: document params
  */
 export interface TableOptions1<Data extends TableData> {
+    silent?: boolean
+    showOptions?: boolean
     header?: TableHeaderParamOptions
     /**
      * allow for complex data structures, objects / arrays as ColData
@@ -267,7 +277,9 @@ export interface OnEditFunc {
     ): void
 }
 
+// should be param the container should have some element
 export type TableContainer = HTMLTableElement | HTMLDivElement | string | undefined | null
+export type TableContainerParam = HTMLTableElement | HTMLDivElement | string | undefined | null
 
 /**
  * todo thats in tableparams... TableHeader is the 2nd option where its a Dict

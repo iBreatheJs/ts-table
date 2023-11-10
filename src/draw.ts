@@ -1,3 +1,4 @@
+import { addOptionsBox, tableDefaultConf } from "./defaultConfig";
 import { getOrCreateContainer } from "./container";
 import { addEvents } from "./events";
 import { Table } from "./table";
@@ -5,6 +6,8 @@ import { ColData, Dict, EventConfig, RowData, TableContainer, TableData, TableHe
 
 export function drawTable<Data extends TableData>(table: Table<Data>) {
     console.log("draw table");
+
+    // table.options.render.default = renderCellHtmlTable
 
     // checks
     // header is infered in drawTableChecks based on data (for indexing cols), remember state here to skip drawing of header
@@ -28,6 +31,20 @@ export function drawTable<Data extends TableData>(table: Table<Data>) {
     // draw
     todo: // narrow container to htmltableelement
     drawTableBody(table, container)
+
+    // maybe put it in drawHeader theres also the other tr in thead with colspan
+    if (table.options.showOptions) {
+        console.warn("todo: this is moved to ArgVisualizer");
+
+        if (!container.tHead) throw new Error("tried to add optionsBox to tableHeader before creation")
+        // let optionsRow = container.tHead.insertRow(0); // 0 inserts at top
+        // let optionsCell = document.createElement("td");
+        // optionsCell.setAttribute("colspan", String(Object.keys(table.header).length))
+        // optionsRow.append(optionsCell)
+        // optionsCell.innerHTML = "options:\n"
+        // addOptionsBox(optionsCell, Table)
+    }
+
     console.timeEnd("drawTable")
     return container
 
@@ -207,14 +224,14 @@ function drawTableHeader<Data extends TableData>(header: TableHeader, container:
     //     searchCell.append(searchInput)
     // }
 
-    // // i'll leave this check here instead of constructor so the table can be redrawn with diffrent params - idk if theres a case for that tho
-    // if (this.options.rowCount != false) {
-    //     this.rowCntHtml = document.createElement("div");
-    //     this.rowCntHtml.style.float = "left"; // todo better style wo float
-    //     this.rowCntHtml.id = this.container.id + "_row-counter";
-    //     this.rowCntHtml.innerHTML = String(this.tableData.length)
-    //     searchCell.append(this.rowCntHtml)
-    // }
+    // i'll leave this check here instead of constructor so the table can be redrawn with diffrent params - idk if theres a case for that tho
+    if (table.options.rowCount != false) {
+        table.rowCntHtml = document.createElement("div");
+        table.rowCntHtml.style.float = "left"; // todo better style wo float
+        // table.rowCntHtml.id = table.container.id + "_row-counter";
+        table.rowCntHtml.innerHTML = String(table.data.length)
+        searchCell.append(table.rowCntHtml)
+    }
 
 
 
@@ -314,46 +331,17 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
             }
             else table.renderRowHtmlTable(table, row)
         }
-
-
-
-    // // TODO: check this here y did i not put it in the function??
-    // // for in returns key (and also Array index) as string
-    // for (let row in this.data) {
-
-    //     // convert string to number for tsc - only necessary when checking for types when indexing data (arr/dict)
-    //     // tried a million years and approches but there is not satisfying way to make ts understand it, it seems
-    //     // TODO document in md
-    //     // if (isArray(this.data)) keyOrIndex = +keyOrIndex; //!!!!
-
-    //     this.renderRowHtmlTable(this, row)
-    // }
-
-    // // add row
-    // if (this.options.extendableRows) {
-    //     let tbody = container.createTBody();
-    //     this.renderRowHtmlTable(tbody, "header")
-    // }
-    // // filter box for this table
-    // if (filterRow) {
-    //     this.addFilterBox(filterRow)
-    // }
-    // // TODO: when is this used? while buildigng sdlfjs;fdl
-    // this.initialized = true
-    // this.changeColourEvenRows()
-
-
 }
 type NestedCellData = ColData | Dict<NestedCellData>
 
 // nestedData type is ColData | Dict with colData but unknown lvl of nesting... some recursive dict or sth, idk
 // useNestedData in case the value should be undefined
-function renderCellHtmlTable<Data extends TableData>(table: Table<Data>, idx: [number, string], cell: HTMLTableCellElement, nestedData?: NestedCellData, useNestedData: boolean = false) {
+export function renderCellHtmlTable<Data extends TableData>(table: Table<Data>, idx: [number, string], cell: HTMLTableCellElement, nestedData?: NestedCellData, useNestedData: boolean = false) {
     let data = nestedData === undefined ? table.data[idx[0]][idx[1]] : nestedData
     // let data = !useNestedData ? table.data[idx[0]][idx[1]] : nestedData
     if (typeof data === "object" && data != null) {
-        console.log("data rendercell");
-        console.log(data);
+        // console.log("data rendercell");
+        // console.log(data);
 
         // arr / tuple type:
         // if (Array.isArray(data)) {
@@ -434,10 +422,11 @@ export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, r
         //     // cell.addEventListener('input', (el: any) => this.onEdit(el))
         // }
 
-        // if (table.options.render?.colContent)
-        //     table.options.render.colContent(table, [rowIdx, col], cell)
-        // else
-        renderCellHtmlTable(table, [rowIdx, col], cell)
+        // todo: assign renderer to use to class instead of checks 
+        if (table.options.render?.colContent)
+            table.options.render.colContent(table, [rowIdx, col], cell)
+        else
+            renderCellHtmlTable(table, [rowIdx, col], cell)
         row.appendChild(cell)
     }
 
