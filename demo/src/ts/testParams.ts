@@ -11,11 +11,15 @@ const variableHtmlElement = (tag: keyof HTMLElementTagNameMap) => {
 export function testParamCombinations() {
     console.log("testParamCombinations");
 
+    // todo: this could be a method provided from test inst with types filled in
     var testsTable: TestDefinitions<typeof Table> = {
         tagName: {
-            test: (testFrame: Document) => {
+            test: (testFrame: Document, subj) => {
+                if (subj) {
+
+                    return subj.tableHtml.tagName
+                }
                 // testFrame.getel
-                return "t.tableHtml.tagName"
             },
             expect: "TABLE"
         },
@@ -38,6 +42,7 @@ export function testParamCombinations() {
             let t = document.createElement("table");
             document.body.appendChild(t)
             t.classList.add("fkntable")
+            return t
         },
         combination: () => {
             console.log("combi");
@@ -80,7 +85,11 @@ export function testParamCombinations() {
     // let ttt: keyof TableParams<TableData> = "container"
     // var argDefObj: ArgDef = {
     // todo: possible to infer these types? not use dict<any>
-    var argDefObj: ArgDefObj<TableParams<TableData>> = {
+
+
+
+    var argDefObj: ArgDefObj<TableParams<TableData>> =
+    {
         "container": containerArgDefObj,
         "data": dataArgDef,
         header: headerArgDef,

@@ -55,16 +55,11 @@ export class Table<Data extends TableData>{
     static tablesActiveCnt: number = 0 // Number of currently existing Table Instances
 
     public container: TableContainer
-    // public container: HTMLTableElement;
-    // private _data: Data = {} as Data;
-
-    // private _data: Data | TableDataExtended
 
     // todo: narrow data from `Data | TableDataExtended`, guess i ll have to add a generic or maybe some kind of discriminated unions but dont think that works for class props 
-    // public _data: T extends string ? string : number;
-
-    public _data: IfTrue<typeof this.options.extendedData, Data, TableDataExtended>
-    // type asdf = typeof this.options.extendedData extends true ? TableDataExtended : Data
+    // have a md note "conditional class property types"
+    // private _data: IfTrue<typeof this.options.extendedData, Data, TableDataExtended>
+    private _data: Data | TableDataExtended
 
 
     public set data(val: IfTrue<typeof this.options.extendedData, Data, TableDataExtended>) {
@@ -91,7 +86,6 @@ export class Table<Data extends TableData>{
 
     public tableHtml: HTMLTableElement
     public header: TableHeader;
-    // private _data: Data;
     public options: TableOptionsReq<Data>
 
     // private tableStyle: Dict<Dict<string>>;
@@ -120,7 +114,6 @@ export class Table<Data extends TableData>{
 
 
     constructor(params: TableParams<Data>);
-    // constructor(container: TableContainer, data: Data, header?: TableHeaderParam, options?: TableOptions<Data>);
     constructor(container: TableParams<Data>["container"], data: TableParams<Data>["data"], header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]);
     constructor(containerOrParams: TableParams<Data>["container"] | TableParams<Data>, data: Data | boolean = false, header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]) {
         let cl = console.log
