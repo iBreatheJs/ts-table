@@ -3,7 +3,7 @@ import { testParamCombinations } from "./testParams";
 // import { Table as TOG } from "@lib/ts-table/src/tableOG";
 // import { testData } from "@lib/ts-table"; // todo: no clean imports
 
-console.log("init ts-table demo");
+console.log("init ts-table demo ");
 
 // basicTable()
 testParamCombinations()
