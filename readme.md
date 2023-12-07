@@ -1,3 +1,9 @@
+modules
+
+ts-table is added as sm, demo in tstable uses it from @lib, 
+others are using lib folder for rn
+
+
 # tstable
 ## todos:
 fix webpack config 
