@@ -22,11 +22,12 @@ export function drawTable<Data extends TableData>(table: Table<Data>) {
     // HEADER
 
     console.log("headerrr bf");
-    console.log(table.header);
+    console.log(table.options);
     if (table.options.header.infer) table.header = { ...inferHeader(table.data), ...table.header } // setup header on draw could be in constructor after setup options
-    if (!table.options.header.hide) { drawTableHeader(table.header, container, table) }
-    console.log("headerrr");
+    console.log("header infered:");
     console.log(table.header);
+    if (!table.options.header.hide) { drawTableHeader(table.header, container, table) }
+
 
     // draw
     todo: // narrow container to htmltableelement
@@ -324,13 +325,32 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
     let tbody = container.createTBody();
     table.container = table.container as HTMLTableElement
     table.container.appendChild(tbody)
-    if (table.data)
-        for (let row = 0; row < table.data.length; row++) {
-            if (table.options.render?.row) {
-                table.options.render?.row(table, row)
+    if (table.data) {
+        console.log("table.data in draw");
+        console.log(table.data);
+
+        if (Array.isArray(table.data)) {
+            for (let row = 0; row < table.data.length; row++) {
+                if (table.options.render?.row) {
+                    table.options.render?.row(table, row)
+                }
+                else table.renderRowHtmlTable(table, row)
             }
-            else table.renderRowHtmlTable(table, row)
         }
+        else {
+            // data is object not array
+            for (let row in table.data) {
+                console.log("row is object");
+                console.log(table.data);
+
+                if (table.options.render?.row) {
+                    table.options.render?.row(table, row)
+                }
+                else table.renderRowHtmlTable(table, row)
+            }
+
+        }
+    }
 }
 type NestedCellData = ColData | Dict<NestedCellData>
 
