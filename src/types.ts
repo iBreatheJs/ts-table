@@ -225,7 +225,7 @@ export interface TableOptions1<Data extends TableData> {
     search?: boolean
     rowCount?: boolean
     showRules?: boolean
-    // editable?: OnEditFunc | true | false
+    editable?: OnEditFunc | true | false
     // extendableRows?: asdf
     eventConfig?: EventConfig
 }

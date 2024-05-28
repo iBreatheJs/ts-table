@@ -37,6 +37,8 @@ import {
      * todo consider always assigning an ID in case the passed element has none 
      */
 export function getOrCreateContainer(container: TableContainer): HTMLTableElement {
+    console.log("getOrCreateContainer");
+    console.log(container);
 
     var tableHtml: HTMLTableElement
     let id;
@@ -100,6 +102,7 @@ export function getOrCreateContainer(container: TableContainer): HTMLTableElemen
             return html as HTMLTableElement
         }
         else if (tagName === "DIV") {
+
             let tableHtml = document.createElement("table");
             tableHtml.classList.add("table-basic")
             let id = html.id ? html.id : String(Table.tablesInstCnt)

@@ -50,7 +50,7 @@ function isParams<Data extends TableData>(obj: any): obj is TableParams<Data> {
  * might need to add null
  */
 type IfTrue<T extends boolean | undefined, TypeTrue, TypeFalse> = T extends true ? TypeTrue : TypeFalse
-export class Table<Data extends TableData>{
+export class Table<Data extends TableData> {
     static tablesInstCnt: number = 0 // Number of Tables instantiated
     static tablesActiveCnt: number = 0 // Number of currently existing Table Instances
 
@@ -117,19 +117,26 @@ export class Table<Data extends TableData>{
     constructor(container: TableParams<Data>["container"], data: TableParams<Data>["data"], header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]);
     constructor(containerOrParams: TableParams<Data>["container"] | TableParams<Data>, data: Data | boolean = false, header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]) {
         let cl = console.log
+        console.log("constrrrr");
+        console.log(arguments);
+
         // init with obj of params - first arg is params
         // Only checks for obj type with manditory data property. 
         // Not boolean is asserted in else... constructor overloads enforce it but ts cant infer that unfortunatelly.
         if (this.argIsObject<Data>(containerOrParams)) {
             let params = containerOrParams
+            console.log("single params")
+            console.log("containerOrParams")
+            console.log(containerOrParams)
             if (params.options?.silent) console.log = () => { }
-
             this.container = params.container
             this._data = params.data
 
             this.header = params.header || {}
             this.options = this.setupOptions(params.options, params.header)
         } else { // init with multiple params -  first arg is container
+            console.log("multi params")
+            console.log(containerOrParams)
             if (options?.silent) console.log = () => { }
             // assert because based on constructors and argIsObject type guard there is no ambiguity
             containerOrParams = containerOrParams as TableContainer
@@ -145,6 +152,40 @@ export class Table<Data extends TableData>{
         this.eventConfig = this.options?.eventConfig ?? {}
 
         this.tableHtml = this.draw()
+
+        console.log("this.options in table constr");
+        console.log(this.options);
+
+        // make editable
+        // TODO: move events outside in config
+        if (this.options.editable) {
+            console.log("make editableeee");
+
+            this.tableHtml.setAttribute("contenteditable", "true")
+            // this.tableHtml.addEventListener('input', (event: Event) => {
+            //     console.log("edit sth: ");
+            //     console.log(event);
+
+            //     // this.onEdit(event, keyOrIndex)
+            // })
+
+            this.tableHtml.addEventListener('input', (event) => {
+                const target = event.target;
+
+                // Check if the target is a table cell (td)
+                if (target.tagName.toLowerCase() === 'td') {
+                    const rowIndex = target.parentElement.rowIndex;
+                    const cellIndex = target.cellIndex;
+
+                    console.log(`Cell at row ${rowIndex} and column ${cellIndex} was edited. New content: ${target.textContent}`);
+                }
+            });
+            // more events but blur might be all thats needed
+            // cell.addEventListener('click', (el: any) => this.onEdit(el))
+            // cell.addEventListener('keyup', (el: any) => this.onEdit(el))
+            // cell.addEventListener('paste', (el: any) => this.onEdit(el))
+            // cell.addEventListener('input', (el: any) => this.onEdit(el))
+        }
 
         console.log("table constructedddd");
         console.log(this.options);
@@ -241,7 +282,8 @@ export class Table<Data extends TableData>{
     // argIsObject2<Data extends TableData>(asdf: any): asdf is object & { containerOrParam: string, data: number } {
     // argIsObject<Data extends TableData>(containerOrParams: any): containerOrParams is TableParams<Data> {
     argIsObject<Data extends TableData>(containerOrParams: any): containerOrParams is TableParams<Data> {
-        return containerOrParams && containerOrParams.data ? true : false;
+        // return containerOrParams && containerOrParams.data ? true : false;
+        return !(containerOrParams instanceof HTMLElement);
     }
 
 
@@ -268,6 +310,7 @@ export class Table<Data extends TableData>{
     draw = (): HTMLTableElement => drawTable(this)
     render = {
         renderCellDefault: renderCellHtmlTable
+        // renderCellDefault: customRowRenderer
     }
     renderRowHtmlTable = (table: Table<Data>, row: number) => renderRowHtmlTable(table, row)
     sort = (event: Event, n: number) => {

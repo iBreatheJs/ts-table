@@ -1,5 +1,7 @@
-import { TableData, TableOptions } from "src/types";
+import { OptionSchema } from "@lib/ts-options/vizualizer/argVisualizer";
+import { TableData, TableOptions } from "./types";
 import { Class } from "@lib/helpers/types";
+
 
 type Required_ish<T> =
     {
@@ -7,56 +9,78 @@ type Required_ish<T> =
     };
 
 
-export const tableOptionSchema = {
-    silent: "boolean",
-    showOptions: ["boolean", undefined],
-    header: [
-        {
-            hide: ["boolean", undefined],
-            infer: ["boolean", undefined],
-        },
-        undefined
-    ],
-    extendedData: ["boolean", undefined],
-    // edit?: edit
-    // tableStyle?: Dict<Dict<string>>,
-    alternateColour: ["boolean", undefined],
-    // todo: these fk up the call method used for passing this context
-    // transformData?: RowFunc<Data>,
-    render: undefined,
-    tableStyle: undefined,
-    showRules: undefined,
-    eventConfig: undefined,
-    // render?: {
-    //     row?: RenderRow<Data> // row html frame that calls rowContnent
-    //     // rowContent?: RenderRow<Data> //todo this is sth,,, data inside eg. table cell
-    //     // col?: Function
-    //     colContent?: RenderColContent<Data>
-    // }
-    // rowFunc?: RowFunc<Data>,
-    // collapsible?: CollapsibleRowFunc<Data>,
-    sortable: undefined,
-    // sortable?: { // TODO: add 3rd value to header that is used for sorting, eg. for time: display simple date format but calc with unix time stamp
-    //     all: boolean,
-    //     cols?: [string]
-    // },
-    filter: undefined,
-    // filter?: boolean | {
-    //     filterConfig?: FilterConfig
-    //     /* {
-    //         |
-    //         custom: {
-    //             // todo low: add cb functions for custom filters if necessary for sth at all  
-    //             // cb to define literal, string, num or whatever 
-    //         }
-    //     } */
-    // },
-    search: undefined,
-    rowCount: ["boolean", undefined],
-    // showRules: boolean
-    // editable?: OnEditFunc | true | false
-    // extendableRows?: asdf
-    // eventConfig?: EventConfig
+/**
+ * schema 
+ * how should they be designed?  
+ * 
+ * schema, config,  
+ * filter, property filter  
+ * 
+ * schema:
+ *      need that to define posible types of options
+ * 
+ * config:  
+ *      needs to 
+ * 
+ * multiple objects to access parallel  
+ * one obj of objects containing all the info
+ * 
+ * mapped types
+ */
+
+export const tableOptionSchema: OptionSchema = {
+    options: {
+        data: "mappedData",
+        silent: "boolean",
+        showOptions: ["boolean", undefined],
+        header: [
+            {
+                hide: ["boolean", undefined],
+                infer: ["boolean", undefined],
+            },
+            undefined
+        ],
+        extendedData: ["boolean", undefined],
+        // edit?: edit
+        // tableStyle?: Dict<Dict<string>>,
+        alternateColour: ["boolean", undefined],
+        // todo: these fk up the call method used for passing this context
+        // transformData?: RowFunc<Data>,
+        render: undefined,
+        tableStyle: undefined,
+        showRules: undefined,
+        eventConfig: undefined,
+        // render?: {
+        //     row?: RenderRow<Data> // row html frame that calls rowContnent
+        //     // rowContent?: RenderRow<Data> //todo this is sth,,, data inside eg. table cell
+        //     // col?: Function
+        //     colContent?: RenderColContent<Data>
+        // }
+        // rowFunc?: RowFunc<Data>,
+        // collapsible?: CollapsibleRowFunc<Data>,
+        sortable: undefined,
+        // sortable?: { // TODO: add 3rd value to header that is used for sorting, eg. for time: display simple date format but calc with unix time stamp
+        //     all: boolean,
+        //     cols?: [string]
+        // },
+        filter: undefined,
+        // filter?: boolean | {
+        //     filterConfig?: FilterConfig
+        //     /* {
+        //         |
+        //         custom: {
+        //             // todo low: add cb functions for custom filters if necessary for sth at all  
+        //             // cb to define literal, string, num or whatever 
+        //         }
+        //     } */
+        // },
+        // search: undefined,
+        rowCount: ["boolean", undefined],
+        // showRules: boolean
+        // editable?: OnEditFunc | true | false
+        // extendableRows?: asdf
+        // eventConfig?: EventConfig
+    }
 }
 export let tableParamSchema = {
     data: "TableData",
