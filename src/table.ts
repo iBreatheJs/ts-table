@@ -97,6 +97,14 @@ export class Table<Data extends TableData> {
     public eventConfig: EventConfig
     public actions;
 
+    /**
+     * how many rows till data rows start  
+     * {@link getCellIdx} uses parent elements index which counts header etc.  
+     * 
+     * my fear is that this way of getting the idx of edited cell might not work with nested tables  
+     */
+    rowOffset: number = 0
+
 
     /**
      * obj
@@ -161,7 +169,8 @@ export class Table<Data extends TableData> {
         if (this.options.editable) {
             console.log("make editableeee");
 
-            this.tableHtml.setAttribute("contenteditable", "true")
+            // need to set contenteditable on cells otherwise target is the whole table
+            // this.tableHtml.setAttribute("contenteditable", "true")
             // this.tableHtml.addEventListener('input', (event: Event) => {
             //     console.log("edit sth: ");
             //     console.log(event);
@@ -170,15 +179,10 @@ export class Table<Data extends TableData> {
             // })
 
             this.tableHtml.addEventListener('input', (event) => {
-                const target = event.target;
-
-                // Check if the target is a table cell (td)
-                if (target.tagName.toLowerCase() === 'td') {
-                    const rowIndex = target.parentElement.rowIndex;
-                    const cellIndex = target.cellIndex;
-
-                    console.log(`Cell at row ${rowIndex} and column ${cellIndex} was edited. New content: ${target.textContent}`);
-                }
+                // this error handling / typing is not ideal but should work for now
+                if (!event.target) throw new Error("No target for input event (edit cell)");
+                const target: HTMLTableCellElement = event.target as HTMLTableCellElement;
+                this.getCellIdx(target)
             });
             // more events but blur might be all thats needed
             // cell.addEventListener('click', (el: any) => this.onEdit(el))
@@ -274,6 +278,18 @@ export class Table<Data extends TableData> {
 
         return opt as TableOptionsReq<Data>
         // if (options) this.options = { ...TableOptions}
+    }
+
+    getCellIdx(cell: HTMLTableCellElement) {
+
+        if (!(cell.tagName.toLowerCase() === 'td')) throw new Error("Editing sth other than td");
+
+        let row: HTMLTableRowElement = cell.parentElement as HTMLTableRowElement
+
+        const rowIndex = row.rowIndex;
+        const cellIndex = cell.cellIndex;
+
+        console.log(`Cell at row ${rowIndex} and column ${cellIndex} was edited. New content: ${cell.textContent}`);
     }
 
     // want that:
