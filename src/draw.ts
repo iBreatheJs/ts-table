@@ -421,6 +421,7 @@ export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, r
         let value = table.data[rowIdx][col];
 
         let cell = document.createElement("td");
+        cell.contentEditable = "true"
 
         // TODO: Test performance difference with concated string 
         // also create rows first then render in one go, createElement for cols instead of insertCell already makes a difference
