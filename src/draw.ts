@@ -2,7 +2,7 @@ import { addOptionsBox, tableDefaultConf } from "./defaultConfig";
 import { getOrCreateContainer } from "./container";
 import { addEvents } from "./events";
 import { Table } from "./table";
-import { ColData, Dict, EventConfig, RowData, TableContainer, TableData, TableHeader } from "./types";
+import { CellData, Dict, EventConfig, RowData, TableContainer, TableData, TableHeader } from "./types";
 
 export function drawTable<Data extends TableData>(table: Table<Data>) {
     console.log("draw table");
@@ -352,7 +352,7 @@ function drawTableBody<Data extends TableData>(table: Table<Data>, container: HT
         }
     }
 }
-type NestedCellData = ColData | Dict<NestedCellData>
+type NestedCellData = CellData | Dict<NestedCellData>
 
 // nestedData type is ColData | Dict with colData but unknown lvl of nesting... some recursive dict or sth, idk
 // useNestedData in case the value should be undefined

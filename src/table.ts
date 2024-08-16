@@ -10,16 +10,13 @@ import {
     // Actions,
     ActionConfig,
     TableHeaderParam,
-    TableDataExtended
+    TableDataExtended,
+    CellData
 } from './types'
 
 import { mergeObjects } from "@lib/helpers";
 // import { TsOptions } from "@lib/ts-options"; // todo: should be in cdb wrapper. for standalone table have to figure sth out bc it cant be an option or it could be removed without possibility of getting it back
 import { renderRowHtmlTable, drawTable, renderCellHtmlTable } from './draw'
-
-// import { getOrCreateContainer } from './container'
-// import { table } from 'console';
-// import { events_custom } from './events';
 
 interface TableConstructor<Data extends TableData> {
     new(container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data>): Table<Data>
@@ -38,11 +35,10 @@ function isParams<Data extends TableData>(obj: any): obj is TableParams<Data> {
     return (obj && obj.container);
 }
 
-
-// interface TableConstructor<Data extends TableData> {
-//     new ( container: TableContainer, header: Dict<string>, data: Data, options: TableOptions<Data> ): Table<Data> | (new (asdf:string):any) 
-// }
-
+export interface CellPos {
+    row: number
+    col: number
+}
 /**
  * If T is true: type is TypeTrue  
  * If T is not true: type is TypeFalse  
@@ -56,10 +52,7 @@ export class Table<Data extends TableData> {
 
     public container: TableContainer
 
-    // todo: narrow data from `Data | TableDataExtended`, guess i ll have to add a generic or maybe some kind of discriminated unions but dont think that works for class props 
-    // have a md note "conditional class property types"
-    // private _data: IfTrue<typeof this.options.extendedData, Data, TableDataExtended>
-    private _data: Data | TableDataExtended
+    private _data: Data
 
 
     public set data(val: IfTrue<typeof this.options.extendedData, Data, TableDataExtended>) {
@@ -88,18 +81,13 @@ export class Table<Data extends TableData> {
     public header: TableHeader;
     public options: TableOptionsReq<Data>
 
-    // private tableStyle: Dict<Dict<string>>;
-    // private filterConfig: FilterConfig | null
-    // public initialized: boolean;
-
-    // private searchHtml: HTMLInputElement | null;
     public rowCntHtml: HTMLDivElement | null = null
     public eventConfig: EventConfig
     public actions;
 
     /**
      * how many rows till data rows start  
-     * {@link getCellIdx} uses parent elements index which counts header etc.  
+     * {@link getCellPos} uses parent elements index which counts header etc.  
      * 
      * my fear is that this way of getting the idx of edited cell might not work with nested tables  
      */
@@ -119,44 +107,19 @@ export class Table<Data extends TableData> {
      * @param data required, for empty table explicitly declare as {} or []
      * @param options 
      */
-
-
-    constructor(params: TableParams<Data>);
-    constructor(container: TableParams<Data>["container"], data: TableParams<Data>["data"], header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]);
-    constructor(containerOrParams: TableParams<Data>["container"] | TableParams<Data>, data: Data | boolean = false, header?: TableParams<Data>["header"], options?: TableParams<Data>["options"]) {
+    constructor(params: TableParams<Data>) {
         let cl = console.log
-        console.log("constrrrr");
+        console.log("table constructor");
         console.log(arguments);
 
-        // init with obj of params - first arg is params
-        // Only checks for obj type with manditory data property. 
-        // Not boolean is asserted in else... constructor overloads enforce it but ts cant infer that unfortunatelly.
-        if (this.argIsObject<Data>(containerOrParams)) {
-            let params = containerOrParams
-            console.log("single params")
-            console.log("containerOrParams")
-            console.log(containerOrParams)
-            if (params.options?.silent) console.log = () => { }
-            this.container = params.container
-            this._data = params.data
+        if (params.options?.silent) console.log = () => { }
+        this.container = params.container
+        this._data = params.data
 
-            this.header = params.header || {}
-            this.options = this.setupOptions(params.options, params.header)
-        } else { // init with multiple params -  first arg is container
-            console.log("multi params")
-            console.log(containerOrParams)
-            if (options?.silent) console.log = () => { }
-            // assert because based on constructors and argIsObject type guard there is no ambiguity
-            containerOrParams = containerOrParams as TableContainer
-            this._data = data as Data
-            // todo: might do some runtime data validation tho
-            // no data and no header cant work todo
+        this.header = params.header || {}
+        this.options = this.setupOptions(params.options, params.header)
 
-            this.container = containerOrParams
 
-            this.header = header || {}
-            this.options = this.setupOptions(options, header)
-        }
         this.eventConfig = this.options?.eventConfig ?? {}
 
         this.tableHtml = this.draw()
@@ -164,32 +127,7 @@ export class Table<Data extends TableData> {
         console.log("this.options in table constr");
         console.log(this.options);
 
-        // make editable
-        // TODO: move events outside in config
-        if (this.options.editable) {
-            console.log("make editableeee");
-
-            // need to set contenteditable on cells otherwise target is the whole table
-            // this.tableHtml.setAttribute("contenteditable", "true")
-            // this.tableHtml.addEventListener('input', (event: Event) => {
-            //     console.log("edit sth: ");
-            //     console.log(event);
-
-            //     // this.onEdit(event, keyOrIndex)
-            // })
-
-            this.tableHtml.addEventListener('input', (event) => {
-                // this error handling / typing is not ideal but should work for now
-                if (!event.target) throw new Error("No target for input event (edit cell)");
-                const target: HTMLTableCellElement = event.target as HTMLTableCellElement;
-                this.getCellIdx(target)
-            });
-            // more events but blur might be all thats needed
-            // cell.addEventListener('click', (el: any) => this.onEdit(el))
-            // cell.addEventListener('keyup', (el: any) => this.onEdit(el))
-            // cell.addEventListener('paste', (el: any) => this.onEdit(el))
-            // cell.addEventListener('input', (el: any) => this.onEdit(el))
-        }
+        this.setEvents()
 
         console.log("table constructedddd");
         console.log(this.options);
@@ -280,16 +218,88 @@ export class Table<Data extends TableData> {
         // if (options) this.options = { ...TableOptions}
     }
 
-    getCellIdx(cell: HTMLTableCellElement) {
+    setEvents() {
 
-        if (!(cell.tagName.toLowerCase() === 'td')) throw new Error("Editing sth other than td");
+        /**
+         * editable  
+         * 
+         * there are some approaches:
+         *  1. add eventlistener to each cell
+         *      i assume thats not efficient
+         *      used to have blur on cell and worked alright actually (so mb reconsider)
+         *  2. (THIS rn) add eventlistener to table and make each cell contenteditable then the target is the cell
+         *      this is probably best
+         *  3. other tracking / events idk.
+         * 
+         * 
+         */
+        if (this.options.editable) {
+            console.log("make editable");
+
+            this.tableHtml.addEventListener('input', (event) => {
+                // this error handling / typing is not ideal but should work for now
+                if (!event.target) throw new Error("No target for input event (edit cell)");
+                const target: HTMLTableCellElement = event.target as HTMLTableCellElement;
+                const pos = this.getCellPos(target)
+
+                let headerKeys = Object.keys(this.header)
+                let valOld = this._data[pos.row][headerKeys[pos.col]]
+                let valNew = target.innerHTML
+
+                // value can be manipulated in onEdit, then is saved to Table._data
+                let valToSave = this.onEdit(pos, valOld, valNew) // || valNew
+                if (!valToSave) throw new Error("No value returned from onEdit method. Pls return the value to be used in editet cell, Note: I put this error to avoid confusion caused by implicit value assertion eg. in case of failed input manipulation in overriding method.");
+
+
+                if (valToSave != valNew) target.innerHTML = String(valToSave) // change in table cell, this puts the at the beginning which it shouldnt, todo
+                this.setDataByIndex(pos, valToSave)
+
+            });
+            // more events but blur might be all thats needed
+            // cell.addEventListener('click', (el: any) => this.onEdit(el))
+            // cell.addEventListener('keyup', (el: any) => this.onEdit(el))
+            // cell.addEventListener('paste', (el: any) => this.onEdit(el))
+            // cell.addEventListener('input', (el: any) => this.onEdit(el))
+        }
+    }
+
+    /**
+     * meant to be overridden to handle table edit  
+     * value can be manipulated then returned to be saved  
+     * @param pos 
+     */
+    onEdit(pos: CellPos, valOld: CellData, valNew: CellData): void | CellData {
+        console.warn("table edited, override onEdit method to handle it")
+        return valNew
+    }
+
+    /**
+     * @param cell cell in table to get index of  
+     * @returns cell position in table  
+     */
+    getCellPos(cell: HTMLTableCellElement) {
+
+        if (!(cell.tagName.toLowerCase() === 'td')) throw new Error("Cant getCellPos of sth other than td");
 
         let row: HTMLTableRowElement = cell.parentElement as HTMLTableRowElement
 
-        const rowIndex = row.rowIndex;
+        let rowIndex = row.rowIndex;
         const cellIndex = cell.cellIndex;
 
+        //mb keep as class property
+        let theadRowCnt = this.tableHtml.tHead?.rows.length ?? 0
+
+        rowIndex = row.rowIndex - theadRowCnt
+
         console.log(`Cell at row ${rowIndex} and column ${cellIndex} was edited. New content: ${cell.textContent}`);
+
+        return { row: rowIndex, col: cellIndex }
+    }
+
+
+    setDataByIndex(pos: CellPos, data: CellData) {
+        let headerKeys = Object.keys(this.header)
+        this._data[pos.row][headerKeys[pos.col]] = data
     }
 
     // want that:

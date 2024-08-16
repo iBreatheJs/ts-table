@@ -8,13 +8,20 @@ export interface Dict<TValue> {
 
 // TODO: implement checkbox etc. for bool
 // undefined so u dont have to define cols which are empty in some rows
-export type ColData = number | string | boolean | undefined
+export type CellData = number | string | boolean | undefined
 
 // performance, what i expect: best is array with fixed length, then known header, last is unknown length of each row 
 // could have different implementation for drawing, but if u dont do it all in one go which is unnecessary complicated only have to iterate once before to get unique keys 
 // ... and for drawing use the key lookup impl, or eventually array impl
-export type RowData = Dict<ColData>
-export type RowDataExtended = Dict<ColData | Dict<any> | Array<any>>
+
+
+/**
+ * data structore for a row  
+ * use only cellData for now and add {@link RowDataExtended} later
+ */
+export type RowData = RowDataSimple
+export type RowDataSimple = Dict<CellData>
+export type RowDataExtended = Dict<CellData | Dict<any> | Array<any>>
 // obj format is nice because no order and empty fields
 // export type RowData2 = Data2[]
 // let data22 = [1,"dsdf", true]
@@ -24,30 +31,6 @@ export type TableData = RowData[]
 export type TableDataExtended = RowDataExtended[]
 // | Dict<RowData>; makes no sense think i meant to have rowdata be an arr
 
-
-
-let data: TableData = [
-    { col1: "val1" },
-    { col2: "val2" }
-]
-// let data2: TableData = {
-//     asfd: { col1: "val1" },
-//     asdf2: { col2: "val2" }
-// }
-
-let data3 = [
-    ["r1col1", "r1col2"],
-    ["r2col1", "r2col2"]
-]
-
-// init this table so i can access the method types:
-let container = "" as unknown as HTMLTableElement
-
-//pretty fkd concept here n probably will fk me when debuging, just know this logs some stuff when types r imported
-// let cl = console.log
-// console.log = () => { }
-// let table = new Table(container, data) // todo: idk what i used that for, ah.. think for some typeof type
-// console.log = cl
 
 type Parameters<T extends (...args: any) => any> = T extends (...args: infer P) => any ? P extends Table<infer X> ? X : P : never;
 type extractGeneric<Type> = Type extends Table<infer X> ? X : never
