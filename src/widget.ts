@@ -6,6 +6,7 @@ import * as info from "./info.json";
 import { testData } from "../data/test-data";
 import { Cdb } from "../../../cdb/cdb";
 import { tableOptionSchema } from "./defaultConfig";
+import { DbTableLoaded } from "../../../data/dataSet";
 
 // type Info = WidgetInfoFrom<typeof info>
 
@@ -26,14 +27,16 @@ export class TableWidget<T extends TableData> extends Table<T> {
     }
     public container: HTMLDivElement; // narrow type and pass div to parent
     static optionSchema = tableOptionSchema
+    dataObj: DbTableLoaded
     constructor(params: WidgetParams['inst'], parent?: Cdb | undefined) {
 
         console.log("init table widget with params: ");
         console.log(params);
 
+        let dataObj = params.options.data
 
         let tableParams: TableParams<T> = {
-            data: params.options.data,
+            data: dataObj.rows, // changed this to rows here fore a more ....sdfsdf
             container: params.container,
             options: params.options as TableOptions<T> ?? {}
         }
@@ -42,6 +45,7 @@ export class TableWidget<T extends TableData> extends Table<T> {
         super(tableParams)
         this.container = params.container
 
+        this.dataObj = dataObj // assign here after super
 
         let defaultArgs: TableParams<typeof testData.simple.data> = { data: testData.simple.data, header: testData.simple.header, container: testData.simple.container }
         this.actions
@@ -52,7 +56,19 @@ export class TableWidget<T extends TableData> extends Table<T> {
         sort: this.actions.sort
     }
 
+    /**
+     * table was edited bu user in dom and  
+     * store changes in db then return new value  ??
+     * 
+     * @param pos 
+     * @param valOld 
+     * @param valNew 
+     * @returns 
+     */
     onEdit(pos: CellPos, valOld: CellData, valNew: CellData): void | CellData {
+        console.log("on edit in widget was clled");
+
+        this.dataObj.update(pos, valNew)
         return valNew
     }
 }
