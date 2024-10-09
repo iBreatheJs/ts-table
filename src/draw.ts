@@ -427,7 +427,7 @@ export function renderRowHtmlTable<Data extends TableData>(table: Table<Data>, r
         // also create rows first then render in one go, createElement for cols instead of insertCell already makes a difference
 
         // set same class for each cell in a col, TODO: remove bc possible collisions except I find a valid usecase 
-        cell.classList.add(col)
+        cell.classList.add(col) // idk if that is even used if needed should be a data attr
 
         // // make editable
         // // TODO: move events outside in config

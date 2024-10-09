@@ -33,7 +33,7 @@ export class TableWidget<T extends TableData> extends Table<T> {
         console.log("init table widget with params: ");
         console.log(params);
 
-        let dataObj = params.options.data
+        let dataObj = params.options.data //this should use the data from the data obj also so it is reused btwm widgets todotodo
 
         let tableParams: TableParams<T> = {
             data: dataObj.rows, // changed this to rows here fore a more ....sdfsdf
@@ -68,7 +68,7 @@ export class TableWidget<T extends TableData> extends Table<T> {
     onEdit(pos: CellPos, valOld: CellData, valNew: CellData): void | CellData {
         console.log("on edit in widget was clled");
 
-        this.dataObj.update(pos, valNew)
+        this.dataObj.update(pos, valNew) // update the dataSet
         return valNew
     }
 }

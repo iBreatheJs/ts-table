@@ -36,8 +36,18 @@ function isParams<Data extends TableData>(obj: any): obj is TableParams<Data> {
 }
 
 export interface CellPos {
-    row: number
-    col: number
+    /**
+     * Id of sqlite row
+     */
+    rowId: number
+    /**
+     * col name
+     */
+    col: string
+    /**
+     * index in html table
+     */
+    rowIndex: number
 }
 /**
  * If T is true: type is TypeTrue  
@@ -78,6 +88,11 @@ export class Table<Data extends TableData> {
     }
 
     public tableHtml: HTMLTableElement
+    /**
+     *  todo:
+     *  this could get fkd with sorting, header shouldnt be an obj
+     *  obj order is preserved for string keys. ether not allow numbers or just store them as string mb? or use arr or map
+     */
     public header: TableHeader;
     public options: TableOptionsReq<Data>
 
@@ -242,8 +257,8 @@ export class Table<Data extends TableData> {
                 const target: HTMLTableCellElement = event.target as HTMLTableCellElement;
                 const pos = this.getCellPos(target)
 
-                let headerKeys = Object.keys(this.header)
-                let valOld = this._data[pos.row][headerKeys[pos.col]]
+                let valOld: CellData = this._data[pos.rowIndex][pos.col] //value in local table data, this should mabe be in the dataset instead or is it the same idk todotodo??
+
                 let valNew = target.innerHTML
 
                 // value can be manipulated in onEdit, then is saved to Table._data
@@ -253,7 +268,6 @@ export class Table<Data extends TableData> {
 
                 if (valToSave != valNew) target.innerHTML = String(valToSave) // change in table cell, this puts the at the beginning which it shouldnt, todo
                 this.setDataByIndex(pos, valToSave)
-
             });
             // more events but blur might be all thats needed
             // cell.addEventListener('click', (el: any) => this.onEdit(el))
@@ -273,33 +287,37 @@ export class Table<Data extends TableData> {
         return valNew
     }
 
+
     /**
+     * get row starting from 0 and col
+     * 
      * @param cell cell in table to get index of  
      * @returns cell position in table  
-     */
-    getCellPos(cell: HTMLTableCellElement) {
-
+    */
+    getCellPos(cell: HTMLTableCellElement): CellPos {
         if (!(cell.tagName.toLowerCase() === 'td')) throw new Error("Cant getCellPos of sth other than td");
 
         let row: HTMLTableRowElement = cell.parentElement as HTMLTableRowElement
 
-        let rowIndex = row.rowIndex;
         const cellIndex = cell.cellIndex;
+
+        let colName = Object.keys(this.header)[cellIndex]
 
         //mb keep as class property
         let theadRowCnt = this.tableHtml.tHead?.rows.length ?? 0
 
-        rowIndex = row.rowIndex - theadRowCnt
+        let rowIndex = row.rowIndex - theadRowCnt
+        let rowId = Number(this._data[rowIndex].id) //row id in table in DB
 
-        console.log(`Cell at row ${rowIndex} and column ${cellIndex} was edited. New content: ${cell.textContent}`);
+        // console.log(`Cell at row ${rowId} and column ${cellIndex} was edited. New content: ${cell.textContent}`);
 
-        return { row: rowIndex, col: cellIndex }
+        return { rowId: rowId, col: colName, rowIndex: rowIndex }
     }
 
 
     setDataByIndex(pos: CellPos, data: CellData) {
         let headerKeys = Object.keys(this.header)
-        this._data[pos.row][headerKeys[pos.col]] = data
+        this._data[pos.rowIndex][pos.col] = data
     }
 
     // want that:
